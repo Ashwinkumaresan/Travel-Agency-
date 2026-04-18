@@ -8,9 +8,32 @@ export interface User {
   phone?: string;
   avatar?: string;
   staffId?: string;
+  location?: string; // Assigned location for staff
 }
 
-export type BookingStatus = 'pending' | 'confirmed' | 'due' | 'completed' | 'cancelled';
+export interface Driver {
+  id: number;
+  name: string;
+  phone: string;
+}
+
+export interface Vehicle {
+  id: number;
+  name: string;
+  number: string;
+}
+
+export interface RouteMapping {
+  id: string;
+  from: string;
+  to: string;
+  driverId: number;
+  driverName: string;
+  vehicleId: number;
+  vehicleNumber: string;
+}
+
+export type BookingStatus = 'in-place' | 'shipping' | 'sent' | 'incoming' | 'received' | 'pending' | 'confirmed' | 'due' | 'completed' | 'cancelled';
 export type PaymentMode = 'pre-paid' | 'post-paid' | 'half-half';
 export type TicketStatus = 'open' | 'in-progress' | 'resolved' | 'closed';
 export type TicketPriority = 'low' | 'medium' | 'high';
@@ -45,6 +68,26 @@ export interface Booking {
   prePaymentDeadline?: string;
   postPaymentDeadline?: string;
   halfPaymentDeadline?: string;
+  
+  // Courier Booking Fields
+  isFragile?: boolean;
+  productDescription?: string;
+  weightKg?: number;
+  ratePerKg?: number;
+  pickupLocation?: string;
+  deliveryLocation?: string;
+  vehicleNo?: string;
+  completedAt?: string; // Timestamp for report
+}
+
+export interface DailyLog {
+  id: string;
+  staffId: string;
+  staffName: string;
+  location: string;
+  courierId: string;
+  action: 'sent' | 'received';
+  timestamp: string;
 }
 
 export type TicketCategory = 'Booked' | 'Completed' | 'Common Query';

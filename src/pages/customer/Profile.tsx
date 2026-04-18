@@ -106,7 +106,7 @@ export default function Profile() {
               <Shield className="h-5 w-5" /> Danger Zone
             </h3>
             <p className="text-sm text-red-600">Once you delete your account, there is no going back. Please be certain.</p>
-            <button className="flex items-center justify-center gap-2 w-full py-3 rounded-md border-2 border-red-200 text-red-600 font-bold hover:bg-red-600 hover:text-white transition-all">
+            <button className="flex items-center justify-center gap-2 w-full py-3 rounded-md border-2 border-black text-black font-bold hover:bg-black hover:text-white transition-all">
               <Trash2 className="h-5 w-5" /> Delete Account
             </button>
           </div>

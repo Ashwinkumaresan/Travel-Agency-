@@ -1,5 +1,5 @@
 import PortalLayout from '@/components/layout/PortalLayout';
-import { DollarSign, Briefcase, Users, Ticket, TrendingUp, MapPin } from 'lucide-react';
+import { DollarSign, Briefcase, Users, Ticket, TrendingUp, MapPin, BarChart3 } from 'lucide-react';
 import { MOCK_BOOKINGS } from '@/constants';
 import { cn, formatCurrency } from '@/lib/utils';
 import { motion } from 'motion/react';
@@ -46,6 +46,18 @@ export default function AdminDashboard() {
   return (
     <PortalLayout role="admin" title="Admin Dashboard">
       <div className="space-y-8">
+        {/* KPI Header */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-display font-bold text-secondary">Global Performance Overview</h2>
+          <button 
+            onClick={() => window.location.href = '/admin/metrics'}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-primary border border-primary/20 bg-primary/5 rounded-lg hover:bg-primary/10 transition-all shadow-sm"
+          >
+            <BarChart3 className="h-4 w-4" />
+            View All Metrics
+          </button>
+        </div>
+
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {[

@@ -1,32 +1,136 @@
 import PortalLayout from '@/components/layout/PortalLayout';
-import { MOCK_BOOKINGS } from '@/constants';
+import { MOCK_BOOKINGS, MOCK_ROUTE_MAPPINGS, MOCK_VEHICLES } from '@/constants';
 import { cn, formatCurrency, formatDate } from '@/lib/utils';
-import { Search, Filter, Eye, CheckCircle, XCircle, X, User, Phone, MapPin, Calendar, Users, CreditCard, Info, Calculator } from 'lucide-react';
-import { useState } from 'react';
+import { Search, Filter, Eye, CheckCircle, XCircle, X, User, Phone, MapPin, Calendar, Users, CreditCard, Info, Calculator, Truck } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Booking } from '@/types';
 import { useNavigate } from 'react-router-dom';
+import { Toaster, toast } from 'sonner';
+import SearchableSelect from '@/components/staff/SearchableSelect';
+import ActionMenu from '@/components/staff/ActionMenu';
 
 export default function ManageBookings() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'all' | 'confirmed' | 'cancelled' | 'completed'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'in-place' | 'shipping' | 'sent' | 'incoming' | 'received'>('all');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>(MOCK_BOOKINGS.map(b => {
+    const pickup = b.pickupLocation || 'Chennai';
+    const delivery = b.deliveryLocation || 'Salem';
+    const mapping = MOCK_ROUTE_MAPPINGS.find(m => m.from === pickup && m.to === delivery);
+    
+    return {
+      ...b,
+      status: b.status === 'confirmed' ? 'in-place' : b.status as any,
+      pickupLocation: pickup,
+      deliveryLocation: delivery,
+      vehicleNo: b.vehicleNo || (mapping ? mapping.vehicleNumber : 'Not Assigned')
+    };
+  }));
+  
   const navigate = useNavigate();
+  
+  // Mocking the current staff's location (e.g., Chennai)
+  const currentStaffLocation = 'Chennai';
 
-  const filteredBookings = MOCK_BOOKINGS.filter(b => {
+  const handleStatusUpdate = (bookingId: string) => {
+    setBookings(prev => prev.map(b => {
+      if (b.id === bookingId) {
+        if (b.status === 'in-place') {
+          toast.success(`Booking ${bookingId} is now Shipping`);
+          // Simulate auto transition from Shipping to Sent
+          setTimeout(() => {
+            setBookings(current => current.map(currB => 
+              currB.id === bookingId ? { ...currB, status: 'sent' } : currB
+            ));
+            toast.info(`Booking ${bookingId} has been Sent`);
+          }, 3000);
+          return { ...b, status: 'shipping' };
+        }
+        if (b.status === 'sent' || b.status === 'incoming') {
+          toast.success(`Booking ${bookingId} has been Received`);
+          return { ...b, status: 'received' };
+        }
+      }
+      return b;
+    }));
+  };
+
+  const handleVehicleUpdate = (bookingId: string, vehicleNo: string) => {
+    setBookings(prev => prev.map(b => 
+      b.id === bookingId ? { ...b, vehicleNo } : b
+    ));
+    toast.success(`Vehicle updated for ${bookingId}`);
+  };
+
+  const handleBulkStatusUpdate = () => {
+    if (selectedIds.length === 0) return;
+    
+    let updatedCount = 0;
+    setBookings(prev => prev.map(b => {
+      if (selectedIds.includes(b.id)) {
+        if (b.status === 'in-place') {
+          updatedCount++;
+          // Simulate auto transition from Shipping to Sent
+          setTimeout(() => {
+            setBookings(current => current.map(currB => 
+              currB.id === b.id ? { ...currB, status: 'sent' } : currB
+            ));
+          }, 3000);
+          return { ...b, status: 'shipping' };
+        }
+        if (b.status === 'sent' || b.status === 'incoming') {
+          updatedCount++;
+          return { ...b, status: 'received' };
+        }
+      }
+      return b;
+    }));
+
+    toast.success(`Updated ${updatedCount} bookings successfully`);
+    setSelectedIds([]);
+  };
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      const ids = filteredBookings.map(b => b.id);
+      setSelectedIds(ids);
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectRow = (id: string) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const filteredBookings = bookings.filter(b => {
     const matchesSearch = b.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          b.customerName.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesTab = activeTab === 'all' ? true : b.status === activeTab;
+    // Logic for "Incoming" vs "Sent"
+    // If status is 'sent', it shows as 'Sent' for origin staff and 'Incoming' for destination staff
+    let displayStatus = b.status;
+    if (b.status === 'sent') {
+      if (currentStaffLocation === b.deliveryLocation) displayStatus = 'incoming';
+      else displayStatus = 'sent';
+    }
+
+    const matchesTab = activeTab === 'all' ? true : displayStatus === activeTab;
 
     return matchesSearch && matchesTab;
   });
 
   const tabs = [
     { id: 'all', label: 'All' },
-    { id: 'confirmed', label: 'Confirmed' },
-    { id: 'cancelled', label: 'Cancelled' },
-    { id: 'completed', label: 'Completed' },
+    { id: 'in-place', label: 'In Place' },
+    { id: 'shipping', label: 'Shipping' },
+    { id: 'sent', label: 'Sent' },
+    { id: 'incoming', label: 'Incoming' },
+    { id: 'received', label: 'Received' },
   ] as const;
 
   return (
@@ -54,7 +158,22 @@ export default function ManageBookings() {
           </div>
 
           {/* Search and Filter on the right */}
-          <div className="flex gap-3 w-full md:w-auto">
+          <div className="flex gap-3 w-full md:w-auto items-center">
+            <AnimatePresence>
+              {selectedIds.length > 0 && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  onClick={handleBulkStatusUpdate}
+                  className="h-10 px-4 flex items-center gap-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-all shadow-lg shadow-green-200 font-bold text-sm"
+                  title="Bulk Update Status"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  <span>Update ({selectedIds.length})</span>
+                </motion.button>
+              )}
+            </AnimatePresence>
             <div className="relative flex-grow md:flex-none">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input 
@@ -72,66 +191,122 @@ export default function ManageBookings() {
         </div>
 
         <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
-          <table className="w-full text-left">
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left min-w-[1000px]">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
+                <th className="px-6 py-4 w-10">
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                    onChange={handleSelectAll}
+                    checked={filteredBookings.length > 0 && selectedIds.length === filteredBookings.length}
+                  />
+                </th>
                 <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Booking ID</th>
                 <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Customer</th>
-                <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Transport</th>
-                <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Travel Date</th>
+                <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Route</th>
+                <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Vehicle No</th>
+                <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Date</th>
                 <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Status</th>
                 <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredBookings.map((booking) => (
-                <tr key={booking.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 text-sm font-bold text-secondary">{booking.id}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary-light flex items-center justify-center text-primary text-xs font-bold">
-                        {booking.customerName.charAt(0)}
+              {filteredBookings.map((booking) => {
+                let displayStatus = booking.status;
+                if (booking.status === 'sent') {
+                  if (currentStaffLocation === booking.deliveryLocation) displayStatus = 'incoming';
+                  else displayStatus = 'sent';
+                }
+
+                return (
+                  <tr key={booking.id} className={cn(
+                    "hover:bg-gray-50 transition-colors",
+                    selectedIds.includes(booking.id) && "bg-primary-light/30"
+                  )}>
+                    <td className="px-6 py-4">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                        checked={selectedIds.includes(booking.id)}
+                        onChange={() => handleSelectRow(booking.id)}
+                      />
+                    </td>
+                    <td className="px-6 py-4 text-sm font-bold text-secondary">{booking.id}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary-light flex items-center justify-center text-primary text-xs font-bold">
+                          {booking.customerName.charAt(0)}
+                        </div>
+                        <span className="text-sm font-medium text-secondary">{booking.customerName}</span>
                       </div>
-                      <span className="text-sm font-medium text-secondary">{booking.customerName}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-text-muted">{booking.packageName}</td>
-                  <td className="px-6 py-4 text-sm text-text-muted">{formatDate(booking.travelDate)}</td>
-                  <td className="px-6 py-4">
-                    <span className={cn("badge", `badge-${booking.status}`)}>
-                      {booking.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button 
-                        onClick={() => navigate('/staff/accounts')}
-                        className="p-2 text-orange-600 hover:bg-orange-50 rounded-md transition-colors" 
-                        title="Accounts"
-                      >
-                        <Calculator className="h-4 w-4" />
-                      </button>
-                      <button 
-                        onClick={() => setSelectedBooking(booking)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors" 
-                        title="View Details"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button className="p-2 text-green-600 hover:bg-green-50 rounded-md transition-colors" title="Confirm">
-                        <CheckCircle className="h-4 w-4" />
-                      </button>
-                      <button className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Reject">
-                        <XCircle className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-secondary">{booking.pickupLocation}</span>
+                        <span className="text-[10px] text-text-muted">to {booking.deliveryLocation}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <SearchableSelect 
+                        value={MOCK_VEHICLES.find(v => v.number === booking.vehicleNo)?.id.toString() || ''}
+                        onSelect={(id) => {
+                          const vehicle = MOCK_VEHICLES.find(v => v.id.toString() === id);
+                          if (vehicle) handleVehicleUpdate(booking.id, vehicle.number);
+                        }}
+                        options={MOCK_VEHICLES.map(v => ({ id: v.id.toString(), label: v.number, sublabel: v.name }))}
+                        placeholder="Select Vehicle"
+                        icon={<Truck className="h-4 w-4" />}
+                        className="w-40"
+                      />
+                    </td>
+                    <td className="px-6 py-4 text-sm text-text-muted">{formatDate(booking.submittedAt)}</td>
+                    <td className="px-6 py-4">
+                      <span className={cn(
+                        "badge", 
+                        displayStatus === 'in-place' && "bg-gray-100 text-gray-600",
+                        displayStatus === 'shipping' && "bg-blue-100 text-blue-700",
+                        displayStatus === 'sent' && "bg-purple-100 text-purple-700",
+                        displayStatus === 'incoming' && "bg-orange-100 text-orange-700",
+                        displayStatus === 'received' && "bg-green-100 text-green-700"
+                      )}>
+                        {displayStatus.replace('-', ' ')}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <ActionMenu 
+                        items={[
+                          {
+                            label: 'View Details',
+                            icon: <Eye className="h-4 w-4" />,
+                            onClick: () => setSelectedBooking(booking)
+                          },
+                          ...(booking.status === 'in-place' || (booking.status === 'sent' && currentStaffLocation === booking.deliveryLocation) ? [
+                            {
+                              label: booking.status === 'in-place' ? 'Mark as Shipping' : 'Mark as Received',
+                              icon: <CheckCircle className="h-4 w-4" />,
+                              onClick: () => handleStatusUpdate(booking.id),
+                              variant: 'success' as const
+                            }
+                          ] : []),
+                          {
+                            label: 'Reject Booking',
+                            icon: <XCircle className="h-4 w-4" />,
+                            onClick: () => toast.error(`Booking ${booking.id} rejected`),
+                            variant: 'danger' as const
+                          }
+                        ]}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </div>
+    </div>
 
       {/* Booking Details Modal */}
       <AnimatePresence>
@@ -171,10 +346,17 @@ export default function ManageBookings() {
                     <div className="flex justify-between items-center">
                       <div>
                         <p className="text-lg font-bold text-secondary">{selectedBooking.packageName}</p>
-                        <p className="text-sm text-text-muted">{selectedBooking.destination}</p>
+                        <p className="text-sm text-text-muted">{selectedBooking.pickupLocation} to {selectedBooking.deliveryLocation}</p>
                       </div>
-                      <span className={cn("badge", `badge-${selectedBooking.status}`)}>
-                        {selectedBooking.status}
+                      <span className={cn(
+                        "badge", 
+                        (selectedBooking.status === 'sent' && currentStaffLocation === selectedBooking.deliveryLocation ? 'incoming' : selectedBooking.status) === 'in-place' && "bg-gray-100 text-gray-600",
+                        (selectedBooking.status === 'sent' && currentStaffLocation === selectedBooking.deliveryLocation ? 'incoming' : selectedBooking.status) === 'shipping' && "bg-blue-100 text-blue-700",
+                        (selectedBooking.status === 'sent' && currentStaffLocation === selectedBooking.deliveryLocation ? 'incoming' : selectedBooking.status) === 'sent' && "bg-purple-100 text-purple-700",
+                        (selectedBooking.status === 'sent' && currentStaffLocation === selectedBooking.deliveryLocation ? 'incoming' : selectedBooking.status) === 'incoming' && "bg-orange-100 text-orange-700",
+                        (selectedBooking.status === 'sent' && currentStaffLocation === selectedBooking.deliveryLocation ? 'incoming' : selectedBooking.status) === 'received' && "bg-green-100 text-green-700"
+                      )}>
+                        {(selectedBooking.status === 'sent' && currentStaffLocation === selectedBooking.deliveryLocation ? 'incoming' : selectedBooking.status).replace('-', ' ')}
                       </span>
                     </div>
                     <div className="pt-4 border-t border-gray-200 flex justify-between text-sm">
@@ -282,14 +464,24 @@ export default function ManageBookings() {
                 >
                   Close
                 </button>
-                <button className="btn-primary px-8">
-                  Update Status
-                </button>
+                {(selectedBooking.status === 'in-place' || (selectedBooking.status === 'sent' && currentStaffLocation === selectedBooking.deliveryLocation)) && (
+                  <button 
+                    onClick={() => {
+                      handleStatusUpdate(selectedBooking.id);
+                      setSelectedBooking(null);
+                    }}
+                    className="btn-primary px-8"
+                  >
+                    {selectedBooking.status === 'in-place' ? 'Mark as Shipping' : 
+                     'Mark as Received'}
+                  </button>
+                )}
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+      <Toaster position="top-right" richColors />
     </PortalLayout>
   );
 }

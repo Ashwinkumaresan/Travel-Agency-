@@ -1,4 +1,7 @@
-import { Booking, Ticket, TripFinance, User } from './types';
+import { Booking, Ticket, TripFinance, User, Driver, Vehicle, RouteMapping } from './types';
+
+export const COURIER_LOCATIONS = ['Chennai', 'Salem', 'Vellore', 'Coimbatore'] as const;
+export const COURIER_RATE_PER_KG = 30;
 
 export const TRANSPORT_TYPES = [
   { id: 'car-2', name: 'Car 2 Seater', image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=400&q=80', capacity: 2 },
@@ -31,7 +34,9 @@ export const MOCK_BOOKINGS: Booking[] = [
     totalMembers: 4,
     totalMales: 2,
     totalFemales: 2,
-    prePaymentDeadline: '2025-06-01'
+    prePaymentDeadline: '2025-06-01',
+    pickupLocation: 'Chennai',
+    deliveryLocation: 'Salem'
   },
   {
     id: 'BK-20250410-0015',
@@ -58,7 +63,9 @@ export const MOCK_BOOKINGS: Booking[] = [
     totalMales: 5,
     totalFemales: 5,
     halfPaymentDeadline: '2025-05-15',
-    postPaymentDeadline: '2025-07-25'
+    postPaymentDeadline: '2025-07-25',
+    pickupLocation: 'Salem',
+    deliveryLocation: 'Chennai'
   }
 ];
 
@@ -187,4 +194,48 @@ export const MOCK_CUSTOMERS: User[] = [
     phone: '+1555666777',
     avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'
   }
+];
+
+export const MOCK_DRIVERS: Driver[] = [
+  { id: 1, name: 'Suresh Kumar', phone: '9876543210' },
+  { id: 2, name: 'Mani Kandan', phone: '8765432109' },
+  { id: 3, name: 'Ravi Teja', phone: '7654321098' },
+  { id: 4, name: 'Kumar Swami', phone: '6543210987' },
+];
+
+export const MOCK_VEHICLES: Vehicle[] = [
+  { id: 1, name: 'Delivery Van', number: 'TN-01-AB-1234' },
+  { id: 2, name: 'Cargo Bike', number: 'TN-02-CD-5678' },
+  { id: 3, name: 'Heavy Truck', number: 'TN-03-EF-9012' },
+  { id: 4, name: 'Mini Van', number: 'TN-04-GH-3456' },
+];
+
+export const MOCK_ROUTE_MAPPINGS: RouteMapping[] = [
+  { 
+    id: 'RM-001', 
+    from: 'Chennai', 
+    to: 'Coimbatore', 
+    driverId: 3, 
+    driverName: 'Ravi Teja', 
+    vehicleId: 1, 
+    vehicleNumber: 'TN-01-AB-1234' 
+  },
+  { 
+    id: 'RM-002', 
+    from: 'Chennai', 
+    to: 'Salem', 
+    driverId: 4, 
+    driverName: 'Kumar Swami', 
+    vehicleId: 2, 
+    vehicleNumber: 'TN-02-CD-5678' 
+  },
+  { 
+    id: 'RM-003', 
+    from: 'Salem', 
+    to: 'Chennai', 
+    driverId: 1, 
+    driverName: 'Suresh Kumar', 
+    vehicleId: 3, 
+    vehicleNumber: 'TN-03-EF-9012' 
+  },
 ];

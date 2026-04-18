@@ -190,7 +190,7 @@ export default function Accounts() {
                               {expenses.length > 1 && (
                                 <button 
                                   onClick={() => removeExpenseField(index)}
-                                  className="p-2 text-red-500 hover:bg-red-50 rounded-md mt-1"
+                                  className="p-2 text-black hover:bg-gray-100 rounded-md mt-1"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </button>

@@ -11,6 +11,7 @@ import {
   Settings,
   Users,
   Package,
+  Truck,
   FileText,
   Calculator,
   X
@@ -37,20 +38,23 @@ const NAV_ITEMS = {
   ],
   staff: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/staff/dashboard' },
-    { label: 'Bookings', icon: Briefcase, path: '/staff/bookings' },
+    { label: 'Book Courier', icon: Package, path: '/staff/book' },
+    { label: 'Route Mapping', icon: Truck, path: '/staff/mapping' },
+    { label: 'Daily Report', icon: FileText, path: '/staff/report' },
+    { label: 'Manage Bookings', icon: Briefcase, path: '/staff/bookings' },
     { label: 'Accounts', icon: Calculator, path: '/staff/accounts' },
     { label: 'Tickets', icon: Ticket, path: '/staff/tickets' },
     { label: 'Customers', icon: Users, path: '/staff/customers' },
-    { label: 'Reports', icon: FileText, path: '/staff/reports' },
     { label: 'My Profile', icon: User, path: '/staff/profile' },
   ],
   admin: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
-    { label: 'Accounts Overview', icon: Calculator, path: '/admin/accounts' },
-    { label: 'Staff Management', icon: Users, path: '/admin/staff' },
+    { label: 'Accounts & Staff', icon: Calculator, path: '/admin/accounts' },
+    { label: 'Drivers', icon: User, path: '/admin/drivers' },
+    { label: 'Vehicles', icon: Truck, path: '/admin/vehicles' },
+    { label: 'Operational Reports', icon: FileText, path: '/admin/reports' },
     { label: 'Booking Overview', icon: Briefcase, path: '/admin/bookings' },
     { label: 'Packages', icon: Package, path: '/admin/packages' },
-    { label: 'Reports & Analytics', icon: FileText, path: '/admin/reports' },
     { label: 'Settings', icon: Settings, path: '/admin/settings' },
   ]
 };

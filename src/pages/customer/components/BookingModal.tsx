@@ -52,11 +52,11 @@ export default function BookingModal({ booking, onClose, onRaiseTicket }: Bookin
               </div>
               <span className={cn(
                 "badge",
-                booking.status === 'confirmed' ? "bg-green-100 text-green-700" :
-                booking.status === 'pending' ? "bg-orange-100 text-orange-700" :
+                booking.status === 'confirmed' || booking.status === 'received' ? "bg-green-100 text-green-700" :
+                booking.status === 'pending' || booking.status === 'in-place' || booking.status === 'shipping' || booking.status === 'sent' || booking.status === 'incoming' ? "bg-orange-100 text-orange-700" :
                 "bg-red-100 text-red-700"
               )}>
-                {booking.status}
+                {booking.status.replace('-', ' ')}
               </span>
             </div>
             <div className="pt-3 border-t border-gray-100 flex justify-between items-center">
