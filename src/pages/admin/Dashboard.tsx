@@ -3,6 +3,7 @@ import { DollarSign, Briefcase, Users, Ticket, TrendingUp, MapPin, BarChart3 } f
 import { MOCK_BOOKINGS } from '@/constants';
 import { cn, formatCurrency } from '@/lib/utils';
 import { motion } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import { 
   LineChart, 
   Line, 
@@ -43,6 +44,8 @@ const DESTINATION_DATA = [
 ];
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
+
   return (
     <PortalLayout role="admin" title="Admin Dashboard">
       <div className="space-y-8">
@@ -50,7 +53,7 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-display font-bold text-secondary">Global Performance Overview</h2>
           <button 
-            onClick={() => window.location.href = '/admin/metrics'}
+            onClick={() => navigate('/admin/metrics')}
             className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-primary border border-primary/20 bg-primary/5 rounded-lg hover:bg-primary/10 transition-all shadow-sm"
           >
             <BarChart3 className="h-4 w-4" />

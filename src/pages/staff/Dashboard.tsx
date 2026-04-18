@@ -3,8 +3,10 @@ import { Briefcase, Ticket, Users, AlertCircle, CheckCircle, XCircle, Clock, Arr
 import { MOCK_BOOKINGS } from '@/constants';
 import { cn, formatDate } from '@/lib/utils';
 import { motion } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 
 export default function StaffDashboard() {
+  const navigate = useNavigate();
   const pendingBookings = MOCK_BOOKINGS.filter(b => b.status === 'pending');
 
   return (
@@ -14,7 +16,7 @@ export default function StaffDashboard() {
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-display font-bold text-secondary">Operational Overview</h2>
           <button 
-            onClick={() => window.location.href = '/staff/metrics'}
+            onClick={() => navigate('/staff/metrics')}
             className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-primary border border-primary/20 bg-primary/5 rounded-lg hover:bg-primary/10 transition-all shadow-sm"
           >
             <BarChart3 className="h-4 w-4" />
