@@ -1,367 +1,473 @@
 import PortalLayout from '@/components/layout/PortalLayout';
-import { MOCK_BOOKINGS, MOCK_FINANCES } from '@/constants';
-import { cn, formatCurrency, formatDate } from '@/lib/utils';
-import { Calculator, Plus, Trash2, Search, ArrowUpRight, ArrowDownRight, DollarSign, ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react';
-import { useState } from 'react';
+import { cn, formatCurrency } from '@/lib/utils';
+import { 
+  Calculator, 
+  Plus, 
+  Trash2, 
+  Search, 
+  ArrowUpRight, 
+  ArrowDownRight, 
+  DollarSign, 
+  History,
+  X,
+  CreditCard,
+  TrendingDown,
+  TrendingUp,
+  Filter
+} from 'lucide-react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { TripFinance, ExpenseItem } from '@/types';
+
+const COMMON_REASONS = [
+  "Fuel",
+  "Driver Salary",
+  "Vehicle Maintenance",
+  "Toll Charges",
+  "Parking Fees",
+  "Loading Charges",
+  "Unloading Charges",
+  "Permits & Documentation",
+  "Insurance Premium",
+  "Vehicle Repairs",
+  "Cleaning & Washing",
+  "Office Supplies",
+  "Utilities (Electricity/Water)",
+  "Communication (Phone/Data)",
+  "Inter-branch Transfer",
+  "Others"
+];
+
+interface ExpenseEntry {
+  id: string;
+  category: string;
+  otherReason?: string;
+  amount: number;
+  timestamp: string;
+}
 
 export default function Accounts() {
-  const [finances, setFinances] = useState<TripFinance[]>(MOCK_FINANCES);
-  const [historySearch, setHistorySearch] = useState('');
-  
-  // Phase State
-  const [currentPhase, setCurrentPhase] = useState(1);
-  const [selectedBookingId, setSelectedBookingId] = useState('');
-  const [tripSearch, setTripSearch] = useState('');
-  const [expenses, setExpenses] = useState<ExpenseItem[]>([{ label: '', amount: 0 }]);
-  const [revenue, setRevenue] = useState(0);
+  const [revenue, setRevenue] = useState(50000); // Default daily revenue for demo
+  const [expenseList, setExpenseList] = useState<ExpenseEntry[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [otherReason, setOtherReason] = useState("");
+  const [amount, setAmount] = useState("");
+  const [categorySearch, setCategorySearch] = useState("");
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [isMobileAddOpen, setIsMobileAddOpen] = useState(false);
 
-  const filteredTrips = MOCK_BOOKINGS.filter(b => 
-    b.id.toLowerCase().includes(tripSearch.toLowerCase()) || 
-    b.customerName.toLowerCase().includes(tripSearch.toLowerCase())
-  );
+  const filteredCategories = useMemo(() => {
+    return COMMON_REASONS.filter(cat => 
+      cat.toLowerCase().includes(categorySearch.toLowerCase())
+    );
+  }, [categorySearch]);
 
-  const selectedBooking = MOCK_BOOKINGS.find(b => b.id === selectedBookingId);
-  
-  const totalExpenses = expenses.reduce((acc, curr) => acc + curr.amount, 0);
-  const profit = revenue - totalExpenses;
-  const loss = profit < 0 ? Math.abs(profit) : 0;
-  const finalProfit = profit > 0 ? profit : 0;
+  const totalExpenses = useMemo(() => {
+    return expenseList.reduce((sum, item) => sum + item.amount, 0);
+  }, [expenseList]);
 
-  const addExpenseField = () => {
-    setExpenses([...expenses, { label: '', amount: 0 }]);
-  };
+  const balance = revenue - totalExpenses;
 
-  const removeExpenseField = (index: number) => {
-    setExpenses(expenses.filter((_, i) => i !== index));
-  };
-
-  const updateExpense = (index: number, field: keyof ExpenseItem, value: string | number) => {
-    const newExpenses = [...expenses];
-    newExpenses[index] = { ...newExpenses[index], [field]: value };
-    setExpenses(newExpenses);
-  };
-
-  const handleSave = () => {
-    if (!selectedBookingId) return;
+  const handleAddExpense = () => {
+    if (!selectedCategory || !amount) return;
     
-    const newFinance: TripFinance = {
-      id: `FIN-${Math.floor(Math.random() * 1000)}`,
-      bookingId: selectedBookingId,
-      expenses: expenses.filter(e => e.label.trim() !== ''),
-      revenue: revenue,
-      profit: finalProfit,
-      loss: loss,
-      updatedAt: new Date().toISOString()
+    const newExpense: ExpenseEntry = {
+      id: Math.random().toString(36).substr(2, 9),
+      category: selectedCategory,
+      otherReason: selectedCategory === "Others" ? otherReason : undefined,
+      amount: parseFloat(amount),
+      timestamp: new Date().toISOString()
     };
 
-    setFinances([newFinance, ...finances]);
-    alert('Account details saved successfully!');
-    resetForm();
+    setExpenseList(prev => [newExpense, ...prev]);
+    
+    // Reset form
+    setSelectedCategory("");
+    setOtherReason("");
+    setAmount("");
+    setCategorySearch("");
+    setIsMobileAddOpen(false);
   };
 
-  const resetForm = () => {
-    setCurrentPhase(1);
-    setSelectedBookingId('');
-    setTripSearch('');
-    setExpenses([{ label: '', amount: 0 }]);
-    setRevenue(0);
+  const removeExpense = (id: string) => {
+    setExpenseList(prev => prev.filter(item => item.id !== id));
   };
 
   return (
-    <PortalLayout role="staff" title="Trip Accounts Handling">
-      <div className="space-y-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Entry Form - Phase Wise */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white p-6 rounded-lg border border-gray-100 shadow-sm min-h-[500px] flex flex-col">
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
-                  <div className="bg-primary-light p-2 rounded-lg">
-                    <Calculator className="h-5 w-5 text-primary" />
-                  </div>
-                  <h3 className="font-display font-bold text-secondary">New Entry</h3>
+    <PortalLayout role="staff" title="Accounts & Expenses">
+      <div className="h-[calc(100vh-140px)] flex flex-col lg:flex-row gap-6 overflow-hidden">
+        
+        {/* Left Column: Form (Desktop Only) */}
+        <div className="hidden lg:block w-[380px] h-full bg-white rounded-3xl border border-gray-100 shadow-sm p-8 overflow-y-auto custom-scrollbar shrink-0">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="p-3 bg-primary text-white rounded-2xl shadow-lg shadow-primary/20">
+              <Calculator className="h-6 w-6" />
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-secondary tracking-tight">Daily Entry</h2>
+              <p className="text-xs font-bold text-text-muted">Manage your expenses</p>
+            </div>
+          </div>
+          
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
+                <Filter className="h-3 w-3" /> Select Category
+              </label>
+              
+              <div className="relative">
+                <div 
+                  onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                  className="w-full bg-white border border-gray-100 rounded-2xl p-4 flex items-center justify-between cursor-pointer group hover:border-primary/30 transition-all"
+                >
+                  <span className={cn("text-xs font-bold", !selectedCategory ? "text-text-muted" : "text-secondary")}>
+                    {selectedCategory || "Choose reason..."}
+                  </span>
+                  <Search className="h-4 w-4 text-gray-400 group-hover:text-primary transition-colors" />
                 </div>
-                <div className="flex gap-1">
-                  {[1, 2, 3].map((p) => (
-                    <div 
-                      key={p} 
-                      className={cn(
-                        "h-1.5 w-6 rounded-full transition-all",
-                        currentPhase >= p ? "bg-primary" : "bg-gray-100"
-                      )}
-                    />
-                  ))}
-                </div>
-              </div>
 
-              <div className="flex-grow">
-                <AnimatePresence mode="wait">
-                  {currentPhase === 1 && (
+                <AnimatePresence>
+                  {showCategoryDropdown && (
                     <motion.div 
-                      key="phase1"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      className="space-y-6"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute z-50 top-full left-0 w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl p-2 max-h-[300px] overflow-hidden flex flex-col"
                     >
-                      <div className="space-y-4">
-                        <p className="text-sm text-text-muted">Step 1: Select the trip for account entry</p>
-                        <div className="relative">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                          <input 
-                            type="text" 
-                            placeholder="Search Trip ID or Name..." 
-                            className="input-field pl-10"
-                            value={tripSearch}
-                            onChange={(e) => setTripSearch(e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-                          {filteredTrips.map((trip) => (
-                            <button
-                              key={trip.id}
-                              onClick={() => setSelectedBookingId(trip.id)}
-                              className={cn(
-                                "w-full p-4 rounded-lg border-2 text-left transition-all",
-                                selectedBookingId === trip.id 
-                                  ? "border-primary bg-primary-light" 
-                                  : "border-gray-50 hover:border-primary/20"
-                              )}
-                            >
-                              <p className="font-bold text-secondary">{trip.id}</p>
-                              <p className="text-xs text-text-muted">{trip.customerName} • {trip.packageName}</p>
-                            </button>
-                          ))}
-                        </div>
+                      <div className="p-2 border-b border-gray-50 text-black">
+                        <input 
+                          type="text"
+                          autoFocus
+                          placeholder="Search or filter..."
+                          className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-1 focus:ring-primary/20"
+                          value={categorySearch}
+                          onChange={(e) => setCategorySearch(e.target.value)}
+                        />
                       </div>
-                      <button 
-                        disabled={!selectedBookingId}
-                        onClick={() => setCurrentPhase(2)}
-                        className="w-full btn-primary py-3 flex items-center justify-center gap-2 disabled:opacity-50"
-                      >
-                        Next Step <ChevronRight className="h-4 w-4" />
-                      </button>
-                    </motion.div>
-                  )}
-
-                  {currentPhase === 2 && (
-                    <motion.div 
-                      key="phase2"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      className="space-y-6"
-                    >
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                          <p className="text-sm text-text-muted">Step 2: Add expenses and revenue</p>
-                          <button 
-                            onClick={addExpenseField}
-                            className="text-primary text-xs font-bold flex items-center gap-1 hover:underline"
+                      <div className="flex-1 overflow-y-auto custom-scrollbar py-2 text-black">
+                        {filteredCategories.map((cat) => (
+                          <button
+                            key={cat}
+                            onClick={() => {
+                              setSelectedCategory(cat);
+                              setShowCategoryDropdown(false);
+                            }}
+                            className={cn(
+                              "w-full text-left px-4 py-3 text-xs font-bold rounded-xl transition-all cursor-pointer",
+                              selectedCategory === cat 
+                                ? "bg-primary text-white" 
+                                : "text-text-muted hover:bg-primary/5 hover:text-primary"
+                            )}
                           >
-                            <Plus className="h-3 w-3" /> Add Label
+                            {cat}
                           </button>
-                        </div>
-                        
-                        <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2">
-                          {expenses.map((exp, index) => (
-                            <div key={index} className="flex gap-2 items-start">
-                              <div className="flex-grow space-y-1">
-                                <input 
-                                  type="text" 
-                                  placeholder="Label (e.g. Petrol)" 
-                                  className="input-field py-2 text-sm"
-                                  value={exp.label}
-                                  onChange={(e) => updateExpense(index, 'label', e.target.value)}
-                                />
-                                <div className="relative">
-                                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400" />
-                                  <input 
-                                    type="number" 
-                                    placeholder="Amount" 
-                                    className="input-field pl-8 py-2 text-sm"
-                                    value={exp.amount || ''}
-                                    onChange={(e) => updateExpense(index, 'amount', Number(e.target.value))}
-                                  />
-                                </div>
-                              </div>
-                              {expenses.length > 1 && (
-                                <button 
-                                  onClick={() => removeExpenseField(index)}
-                                  className="p-2 text-black hover:bg-gray-100 rounded-md mt-1"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="pt-4 border-t border-gray-100">
-                          <label className="text-xs font-bold text-text-muted uppercase tracking-widest block mb-2">Total Revenue</label>
-                          <div className="relative">
-                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                            <input 
-                              type="number" 
-                              className="input-field pl-10"
-                              placeholder="Enter total revenue"
-                              value={revenue || ''}
-                              onChange={(e) => setRevenue(Number(e.target.value))}
-                            />
+                        ))}
+                        {filteredCategories.length === 0 && (
+                          <div className="p-4 text-center text-[10px] font-bold text-text-muted italic">
+                            No results found
                           </div>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-3">
-                        <button 
-                          onClick={() => setCurrentPhase(1)}
-                          className="flex-1 btn-outline py-3 flex items-center justify-center gap-2"
-                        >
-                          <ChevronLeft className="h-4 w-4" /> Back
-                        </button>
-                        <button 
-                          disabled={expenses.some(e => !e.label || e.amount <= 0) || revenue <= 0}
-                          onClick={() => setCurrentPhase(3)}
-                          className="flex-1 btn-primary py-3 flex items-center justify-center gap-2 disabled:opacity-50"
-                        >
-                          Review <ChevronRight className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {currentPhase === 3 && (
-                    <motion.div 
-                      key="phase3"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      className="space-y-6"
-                    >
-                      <div className="space-y-6">
-                        <p className="text-sm text-text-muted text-center">Step 3: Confirm and submit</p>
-                        
-                        <div className="bg-gray-50 p-6 rounded-lg space-y-4">
-                          <div className="flex justify-between items-center pb-4 border-b border-gray-200">
-                            <div>
-                              <p className="text-xs text-text-muted uppercase font-bold">Trip ID</p>
-                              <p className="font-bold text-secondary">{selectedBookingId}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-xs text-text-muted uppercase font-bold">Customer</p>
-                              <p className="font-bold text-secondary">{selectedBooking?.customerName}</p>
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            {expenses.map((exp, i) => (
-                              <div key={i} className="flex justify-between text-sm">
-                                <span className="text-text-muted">{exp.label}</span>
-                                <span className="font-medium text-secondary">{formatCurrency(exp.amount)}</span>
-                              </div>
-                            ))}
-                          </div>
-
-                          <div className="pt-4 border-t border-gray-200 space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span className="font-bold text-secondary">Total Revenue</span>
-                              <span className="font-bold text-green-600">{formatCurrency(revenue)}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="font-bold text-secondary">Total Expenses</span>
-                              <span className="font-bold text-red-600">{formatCurrency(totalExpenses)}</span>
-                            </div>
-                            <div className="flex justify-between pt-2 border-t border-dashed border-gray-300">
-                              <span className="font-bold text-secondary">Net {profit >= 0 ? 'Profit' : 'Loss'}</span>
-                              <span className={cn("text-lg font-bold", profit >= 0 ? "text-green-600" : "text-red-600")}>
-                                {formatCurrency(profit)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-3">
-                        <button 
-                          onClick={() => setCurrentPhase(2)}
-                          className="flex-1 btn-outline py-3 flex items-center justify-center gap-2"
-                        >
-                          <ChevronLeft className="h-4 w-4" /> Back
-                        </button>
-                        <button 
-                          onClick={handleSave}
-                          className="flex-1 btn-primary py-3 flex items-center justify-center gap-2"
-                        >
-                          <CheckCircle2 className="h-4 w-4" /> Submit Entry
-                        </button>
+                        )}
                       </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
-            </div>
-          </div>
 
-          {/* History Table */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                <h3 className="font-display font-bold text-secondary">Account History</h3>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              {selectedCategory === "Others" && (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-text-muted uppercase tracking-widest pl-2">Specific Reason</label>
                   <input 
-                    type="text" 
-                    placeholder="Search by Booking ID..." 
-                    className="input-field pl-10 py-1.5 text-xs w-48"
-                    value={historySearch}
-                    onChange={(e) => setHistorySearch(e.target.value)}
+                    type="text"
+                    placeholder="Type your own reason..."
+                    className="w-full bg-white border border-gray-100 rounded-2xl p-4 text-xs font-bold focus:ring-1 focus:ring-primary/20 transition-all text-black"
+                    value={otherReason}
+                    onChange={(e) => setOtherReason(e.target.value)}
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest pl-2">Amount Spent</label>
+                <div className="relative text-black">
+                  <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
+                  <input 
+                    type="number"
+                    placeholder="0.00"
+                    className="w-full bg-white border border-gray-100 rounded-2xl p-4 pl-12 text-xs font-black focus:ring-1 focus:ring-primary/20 transition-all text-black"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
                   />
                 </div>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead className="bg-gray-50 border-b border-gray-100">
-                    <tr>
-                      <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Booking ID</th>
-                      <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Revenue</th>
-                      <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Expenses</th>
-                      <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Profit/Loss</th>
-                      <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {finances.filter(f => f.bookingId.toLowerCase().includes(historySearch.toLowerCase())).map((finance) => {
-                      const totalExp = finance.expenses.reduce((acc, curr) => acc + curr.amount, 0);
-                      const isProfit = finance.profit > 0;
-                      return (
-                        <tr key={finance.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4 text-sm font-mono font-bold text-secondary">{finance.bookingId}</td>
-                          <td className="px-6 py-4 text-sm font-bold text-green-600">{formatCurrency(finance.revenue)}</td>
-                          <td className="px-6 py-4 text-sm text-red-600">{formatCurrency(totalExp)}</td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-1">
-                              {isProfit ? (
-                                <ArrowUpRight className="h-4 w-4 text-green-600" />
-                              ) : (
-                                <ArrowDownRight className="h-4 w-4 text-red-600" />
-                              )}
-                              <span className={cn("text-sm font-bold", isProfit ? "text-green-600" : "text-red-600")}>
-                                {formatCurrency(isProfit ? finance.profit : finance.loss)}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-xs text-text-muted">{formatDate(finance.updatedAt)}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+
+              <button 
+                onClick={handleAddExpense}
+                disabled={!selectedCategory || !amount}
+                className="w-full bg-primary text-white rounded-2xl py-5 font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:translate-y-0 cursor-pointer"
+              >
+                <Plus className="h-4 w-4" /> Add Expense
+              </button>
+            </div>
+
+            <div className="p-6 bg-secondary/5 rounded-3xl border border-secondary/10 space-y-4">
+              <h4 className="text-[10px] font-black text-secondary uppercase tracking-widest flex items-center gap-2">
+                <TrendingUp className="h-3 w-3" /> Revenue Management
+              </h4>
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold text-text-muted uppercase">Today's Revenue</p>
+                <div className="flex items-end gap-2">
+                  <span className="text-2xl font-black text-secondary font-mono">₹{revenue.toLocaleString()}</span>
+                  <button className="text-[10px] font-black text-primary hover:underline pb-1 cursor-pointer">Update</button>
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Right Column: Table & Summary */}
+        <div className="flex-1 flex flex-col gap-6 min-h-0 min-w-0 text-black">
+          
+          {/* Top Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0 px-4 lg:px-0">
+            <div className="bg-white p-5 rounded-3xl border border-gray-50 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center text-green-600">
+                <ArrowUpRight className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Revenue</p>
+                <p className="text-lg font-black text-secondary font-mono">₹{revenue.toLocaleString()}</p>
+              </div>
+            </div>
+            <div className="bg-white p-5 rounded-3xl border border-gray-50 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-red-600">
+                <ArrowDownRight className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Spent</p>
+                <p className="text-lg font-black text-secondary font-mono">₹{totalExpenses.toLocaleString()}</p>
+              </div>
+            </div>
+            <div className="bg-primary p-5 rounded-3xl shadow-xl shadow-primary/20 flex items-center gap-4">
+              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-white">
+                <CreditCard className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-white/70 uppercase tracking-widest">Balance</p>
+                <p className="text-lg font-black text-white font-mono">₹{balance.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Table Container */}
+          <div className="flex-1 bg-white rounded-3xl border border-gray-50 shadow-sm overflow-hidden flex flex-col mx-4 lg:mx-0">
+            <div className="p-6 border-b border-gray-50 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <History className="h-5 w-5 text-secondary" />
+                <h3 className="font-black text-secondary text-sm uppercase tracking-tight">Recent Expenses</h3>
+              </div>
+              <button 
+                onClick={() => setIsMobileAddOpen(true)}
+                className="lg:hidden p-2 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 cursor-pointer"
+              >
+                <Plus className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              <table className="w-full text-left">
+                <thead className="sticky top-0 bg-white z-10 shadow-sm shadow-gray-50">
+                  <tr className="border-b border-gray-50">
+                    <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest">Category</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest">Time</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest text-right">Amount</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {expenseList.map((item) => (
+                    <tr key={item.id} className="group hover:bg-gray-50/50 transition-all">
+                      <td className="px-6 py-5">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-black text-secondary">{item.category}</span>
+                          {item.otherReason && (
+                            <span className="text-[10px] font-bold text-text-muted italic">{item.otherReason}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <span className="text-[10px] font-bold text-text-muted">
+                          {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5 text-right">
+                        <span className="text-xs font-black text-red-600 font-mono">
+                          - ₹{item.amount.toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5 text-right">
+                        <button 
+                          onClick={() => removeExpense(item.id)}
+                          className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all cursor-pointer"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {expenseList.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-6 py-12 text-center underline-offset-4">
+                        <div className="flex flex-col items-center gap-3 text-black">
+                          <div className="p-4 bg-gray-50 rounded-full">
+                            <TrendingDown className="h-8 w-8 text-gray-300" />
+                          </div>
+                          <p className="text-xs font-black text-text-muted uppercase tracking-wider">No expenses recorded today</p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Footer Calculation */}
+            <div className="p-6 bg-gray-50/50 border-t border-gray-50 flex items-center justify-between shrink-0">
+               <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Balance after expenses</span>
+               <span className={cn(
+                 "text-sm font-black font-mono",
+                 balance >= 0 ? "text-green-600" : "text-red-600"
+               )}>
+                 ₹{balance.toLocaleString()}
+               </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Popup Form */}
+        <AnimatePresence>
+          {isMobileAddOpen && (
+            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsMobileAddOpen(false)}
+                className="absolute inset-0 bg-secondary/40 backdrop-blur-sm"
+              />
+              <motion.div 
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                className="relative w-full max-w-md bg-white rounded-t-[40px] sm:rounded-[40px] shadow-2xl p-8 overflow-y-auto max-h-[90vh] custom-scrollbar"
+              >
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-xl font-black text-secondary">Add Expense</h3>
+                  <button 
+                    onClick={() => setIsMobileAddOpen(false)}
+                    className="p-2 bg-gray-50 rounded-full text-text-muted hover:text-secondary transition-colors cursor-pointer"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                
+                {/* Re-use form inside mobile popup */}
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
+                      <Filter className="h-3 w-3" /> Select Category
+                    </label>
+                    
+                    <div className="relative">
+                      <div 
+                        onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                        className="w-full bg-white border border-gray-100 rounded-2xl p-4 flex items-center justify-between cursor-pointer group hover:border-primary/30 transition-all"
+                      >
+                        <span className={cn("text-xs font-bold", !selectedCategory ? "text-text-muted" : "text-secondary")}>
+                          {selectedCategory || "Choose reason..."}
+                        </span>
+                        <Search className="h-4 w-4 text-gray-400 group-hover:text-primary transition-colors" />
+                      </div>
+
+                      <AnimatePresence>
+                        {showCategoryDropdown && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            className="absolute z-50 bottom-full sm:top-full left-0 w-full mb-2 sm:mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl p-2 max-h-[300px] overflow-hidden flex flex-col"
+                          >
+                            <div className="p-2 border-b border-gray-50">
+                              <input 
+                                type="text"
+                                autoFocus
+                                placeholder="Search or filter..."
+                                className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-1 focus:ring-primary/20 text-black"
+                                value={categorySearch}
+                                onChange={(e) => setCategorySearch(e.target.value)}
+                              />
+                            </div>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar py-2 text-black">
+                              {filteredCategories.map((cat) => (
+                                <button
+                                  key={cat}
+                                  onClick={() => {
+                                    setSelectedCategory(cat);
+                                    setShowCategoryDropdown(false);
+                                  }}
+                                  className={cn(
+                                    "w-full text-left px-4 py-3 text-xs font-bold rounded-xl transition-all cursor-pointer",
+                                    selectedCategory === cat 
+                                      ? "bg-primary text-white" 
+                                      : "text-text-muted hover:bg-primary/5 hover:text-primary"
+                                  )}
+                                >
+                                  {cat}
+                                </button>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {selectedCategory === "Others" && (
+                      <div className="space-y-2">
+                        <input 
+                          type="text"
+                          placeholder="Type your own reason..."
+                          className="w-full bg-white border border-gray-100 rounded-2xl p-4 text-xs font-bold focus:ring-1 focus:ring-primary/20 transition-all text-black"
+                          value={otherReason}
+                          onChange={(e) => setOtherReason(e.target.value)}
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
+                        <input 
+                          type="number"
+                          placeholder="Amount Spent"
+                          className="w-full bg-white border border-gray-100 rounded-2xl p-4 pl-12 text-xs font-black focus:ring-1 focus:ring-primary/20 transition-all text-black"
+                          value={amount}
+                          onChange={(e) => setAmount(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={handleAddExpense}
+                      disabled={!selectedCategory || !amount}
+                      className="w-full bg-primary text-white rounded-2xl py-5 font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3 disabled:opacity-50 cursor-pointer"
+                    >
+                      <Plus className="h-4 w-4" /> Add Expense
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
       </div>
     </PortalLayout>
   );

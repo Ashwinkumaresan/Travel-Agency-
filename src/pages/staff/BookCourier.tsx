@@ -59,6 +59,7 @@ export default function BookCourier() {
     freight: 0,
     loadingUnloading: 0,
     doorPickup: 0,
+    ddCharges: 0,
     otherTransport: 0,
     mamool: 0,
     statCharges: 10
@@ -100,7 +101,8 @@ export default function BookCourier() {
   };
 
   const handleFeeChange = (field: keyof typeof fees, value: string) => {
-    const num = value === '' ? 0 : parseFloat(value);
+    const rawNum = value === '' ? 0 : parseFloat(value);
+    const num = Math.max(0, rawNum);
     setFees({ ...fees, [field]: num });
   };
 
@@ -128,6 +130,7 @@ export default function BookCourier() {
       freight: 0,
       loadingUnloading: 0,
       doorPickup: 0,
+      ddCharges: 0,
       otherTransport: 0,
       mamool: 0,
       statCharges: 10
@@ -473,6 +476,7 @@ export default function BookCourier() {
                   { label: 'Freight', key: 'freight' },
                   { label: 'Loading & Unloading', key: 'loadingUnloading' },
                   { label: 'Door Pickup', key: 'doorPickup' },
+                  { label: 'D/D Charges', key: 'ddCharges' },
                   { label: 'Other Transport Crossing', key: 'otherTransport' },
                   { label: 'Mamool', key: 'mamool' },
                   { label: 'Statistical Charges', key: 'statCharges', default: 10 },
@@ -483,9 +487,16 @@ export default function BookCourier() {
                       <span className="absolute left-0 bottom-2 text-xs font-bold text-gray-300">₹</span>
                       <input 
                         type="number" 
+                        min="0"
+                        placeholder="0"
                         className="w-full pl-4 py-1 text-sm font-bold text-secondary border-b border-gray-100 focus:border-primary outline-none transition-all bg-transparent"
-                        value={fees[fee.key as keyof typeof fees]}
+                        value={fees[fee.key as keyof typeof fees] || ''}
                         onChange={e => handleFeeChange(fee.key as any, e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === '-' || e.key === 'e') {
+                            e.preventDefault();
+                          }
+                        }}
                       />
                     </div>
                   </div>
