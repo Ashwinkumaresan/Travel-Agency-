@@ -146,13 +146,13 @@ export default function GDMManagement() {
               <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mt-1">Manage transport dispatch records</p>
             </div>
             
-            <div className="hidden md:flex items-center bg-gray-100/50 p-1 rounded-2xl border border-gray-200">
+            <div className="hidden md:flex items-center bg-gray-100/50 p-1 rounded-[4px] border border-gray-200">
               {(['all', 'unshipped', 'shipped'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={cn(
-                    "px-6 py-2 rounded-xl text-xs font-black uppercase tracking-tighter transition-all",
+                    "px-6 py-2 rounded-[4px] text-xs font-black uppercase tracking-tighter transition-all",
                     activeTab === tab 
                       ? "bg-white text-secondary shadow-sm scale-105" 
                       : "text-text-muted hover:text-secondary"
@@ -170,7 +170,7 @@ export default function GDMManagement() {
               <input 
                 type="text" 
                 placeholder="Search GDM No, Vehicle..." 
-                className="pl-12 pr-6 py-3 bg-white border border-gray-100 rounded-[1.25rem] text-xs font-bold w-full md:w-80 shadow-sm focus:ring-4 focus:ring-primary/10 transition-all outline-none"
+                className="pl-12 pr-6 py-3 bg-white border border-gray-100 rounded-[4px] text-xs font-bold w-full md:w-80 shadow-sm focus:ring-4 focus:ring-primary/10 transition-all outline-none"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -179,7 +179,7 @@ export default function GDMManagement() {
         </div>
 
         {/* GDM Table */}
-        <div className="bg-white rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-200/50 overflow-hidden">
+        <div className="bg-white rounded-[8px] border border-gray-100 shadow-xl shadow-gray-200/50 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -284,24 +284,24 @@ export default function GDMManagement() {
           {selectedGDM && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedGDM(null)} className="absolute inset-0 bg-secondary/60 backdrop-blur-md" />
-              <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative bg-white w-full max-w-5xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+              <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative bg-white w-full max-w-5xl rounded-[8px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
                 
                 {/* Modern Header */}
                 <div className="bg-secondary p-10 text-white flex justify-between items-start shrink-0 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-80 h-80 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                  <div className="absolute top-0 right-0 w-80 h-80 bg-primary/10 rounded-[4px] blur-3xl -translate-y-1/2 translate-x-1/2" />
                   <div className="relative z-10 flex items-center gap-8">
-                    <div className="w-16 h-16 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/20 shadow-2xl"><FileText className="h-8 w-8 text-primary" /></div>
+                    <div className="w-16 h-16 bg-white/10 backdrop-blur-xl rounded-[8px] flex items-center justify-center border border-white/20 shadow-2xl"><FileText className="h-8 w-8 text-primary" /></div>
                     <div>
                       <div className="flex items-center gap-4 mb-2">
                         <h2 className="text-3xl font-black tracking-tight">{selectedGDM.gdmNo}</h2>
-                        <span className="bg-primary/20 text-primary text-[10px] px-3 py-1 rounded-full font-black uppercase">{selectedGDM.status}</span>
+                        <span className="bg-primary/20 text-primary text-[10px] px-3 py-1 rounded-[4px] font-black uppercase">{selectedGDM.status}</span>
                       </div>
                       <p className="text-white/60 text-xs font-bold uppercase tracking-[0.2em]">{selectedGDM.route}</p>
                     </div>
                   </div>
                   <div className="relative z-10 flex items-center gap-3">
-                    <button onClick={() => setIsPrintModalOpen(true)} className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-2xl font-black text-xs transition-all shadow-xl shadow-green-500/20"><Printer className="h-4 w-4" /> PRINT GDM</button>
-                    <button onClick={() => setSelectedGDM(null)} className="p-3 hover:bg-white/10 rounded-2xl transition-colors backdrop-blur-md border border-white/10"><X className="h-6 w-6" /></button>
+                    <button onClick={() => setIsPrintModalOpen(true)} className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-[8px] font-black text-xs transition-all shadow-xl shadow-green-500/20"><Printer className="h-4 w-4" /> PRINT GDM</button>
+                    <button onClick={() => setSelectedGDM(null)} className="p-3 hover:bg-white/10 rounded-[8px] transition-colors backdrop-blur-md border border-white/10"><X className="h-6 w-6" /></button>
                   </div>
                 </div>
 
@@ -313,20 +313,20 @@ export default function GDMManagement() {
                       
                       {/* Transport Details Cards */}
                       <div className="grid grid-cols-2 gap-6">
-                        <div className="p-8 bg-gray-50 border border-gray-100 rounded-[2rem] space-y-4">
+                        <div className="p-8 bg-gray-50 border border-gray-100 rounded-[8px] space-y-4">
                           <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] border-b border-gray-200 pb-3">Vehicle Details</p>
                           <div className="flex items-center gap-5">
-                            <div className="w-14 h-14 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center text-primary"><Truck className="h-7 w-7" /></div>
+                            <div className="w-14 h-14 bg-white rounded-[8px] shadow-sm border border-gray-100 flex items-center justify-center text-primary"><Truck className="h-7 w-7" /></div>
                             <div>
                               <p className="text-xl font-black font-mono text-secondary leading-none mb-1">{selectedGDM.vehicleNo}</p>
                               <p className="text-[11px] font-bold text-text-muted uppercase">Fleet Assigned</p>
                             </div>
                           </div>
                         </div>
-                        <div className="p-8 bg-gray-50 border border-gray-100 rounded-[2rem] space-y-4">
+                        <div className="p-8 bg-gray-50 border border-gray-100 rounded-[8px] space-y-4">
                           <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] border-b border-gray-200 pb-3">Driver Profile</p>
                           <div className="flex items-center gap-5">
-                            <div className="w-14 h-14 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center text-primary"><User className="h-7 w-7" /></div>
+                            <div className="w-14 h-14 bg-white rounded-[8px] shadow-sm border border-gray-100 flex items-center justify-center text-primary"><User className="h-7 w-7" /></div>
                             <div>
                               <p className="text-xl font-black text-secondary leading-none mb-1">{selectedGDM.driverName}</p>
                               <p className="text-[11px] font-bold text-text-muted uppercase">{selectedGDM.driverPhone}</p>
@@ -342,7 +342,7 @@ export default function GDMManagement() {
                              <Package className="h-4 w-4 text-primary" /> Manifested Shipments
                           </h3>
                         </div>
-                        <div className="bg-white border border-gray-100 rounded-[2rem] overflow-hidden shadow-sm">
+                        <div className="bg-white border border-gray-100 rounded-[8px] overflow-hidden shadow-sm">
                           <table className="w-full text-left">
                             <thead>
                               <tr className="bg-gray-50 border-b border-gray-100">
@@ -366,7 +366,7 @@ export default function GDMManagement() {
                                   <td className="px-6 py-5">
                                     <div className="flex flex-col items-center">
                                       <span className={cn(
-                                        "text-[9px] px-2 py-0.5 rounded-full font-black uppercase",
+                                        "text-[9px] px-2 py-0.5 rounded-[4px] font-black uppercase",
                                         lr.paymentStatus === 'paid' ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
                                       )}>{lr.paymentStatus}</span>
                                       {lr.paymentMode && (
@@ -380,7 +380,7 @@ export default function GDMManagement() {
                                   <td className="px-6 py-5 text-right">
                                     <button 
                                       onClick={() => handleDeleteLRFromGDM(lr.id)}
-                                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                      className="p-2 text-red-500 hover:bg-red-50 rounded-[8px] transition-colors"
                                       title="Remove from GDM"
                                     >
                                       <Trash2 className="h-4 w-4" />
@@ -396,7 +396,7 @@ export default function GDMManagement() {
 
                     {/* Right Side: Dispatch Summary */}
                     <div className="space-y-8">
-                       <div className="bg-gray-900 text-white rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden group">
+                       <div className="bg-gray-900 text-white rounded-[8px] p-10 shadow-2xl relative overflow-hidden group">
                           <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:opacity-10 transition-opacity"><Truck className="h-40 w-40 rotate-12 transition-transform duration-700" /></div>
                           <h4 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-8 border-b border-white/10 pb-4">Dispatch Summary</h4>
                           <div className="space-y-8 relative z-10">
@@ -417,12 +417,12 @@ export default function GDMManagement() {
                           </div>
                        </div>
 
-                       <div className="p-8 border-2 border-dashed border-gray-100 rounded-[2.5rem] space-y-6">
+                       {/* <div className="p-8 border-2 border-dashed border-gray-100 rounded-[8px] space-y-6">
                          <h4 className="text-[10px] font-black text-text-muted uppercase text-center tracking-[0.2em]">Route Ledger</h4>
                          <div className="space-y-6 relative overflow-hidden">
                            <div className="absolute left-3 top-2 bottom-2 w-0.5 bg-gray-100" />
                            <div className="flex gap-4 relative z-10">
-                             <div className="w-6 h-6 bg-green-500 rounded-full border-4 border-white shadow-sm shrink-0" />
+                             <div className="w-6 h-6 bg-green-500 rounded-[4px] border-4 border-white shadow-sm shrink-0" />
                              <div>
                                <p className="text-[10px] font-black text-secondary leading-none mb-1">Dispatch Node</p>
                                <p className="text-[9px] font-bold text-text-muted uppercase">{formatDate(selectedGDM.dispatchDate)}</p>
@@ -443,7 +443,7 @@ export default function GDMManagement() {
                              </div>
                            </div>
                          </div>
-                       </div>
+                       </div> */}
                     </div>
                   </div>
                 </div>

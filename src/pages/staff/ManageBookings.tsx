@@ -188,13 +188,13 @@ export default function ManageBookings() {
         
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
-          <div className="flex items-center gap-3 bg-gray-100/50 p-1 rounded-xl w-full md:w-fit overflow-x-auto custom-scrollbar border border-gray-100">
+          <div className="flex items-center gap-3 bg-gray-100/50 p-1 rounded-[8px] w-full md:w-fit overflow-x-auto custom-scrollbar border border-gray-100">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
                 className={cn(
-                  "px-4 py-2 rounded-lg transition-all duration-300 relative flex items-center gap-2",
+                  "px-4 py-2 rounded-[4px] transition-all duration-300 relative flex items-center gap-2",
                   activeTab === tab.id 
                     ? "bg-white text-secondary shadow-md font-bold" 
                     : "text-text-muted hover:text-secondary font-medium"
@@ -202,13 +202,13 @@ export default function ManageBookings() {
               >
                 <span className="text-xs uppercase tracking-wider">{tab.label}</span>
                 <span className={cn(
-                  "text-[10px] px-1.5 py-0.5 rounded-md",
+                  "text-[10px] px-1.5 py-0.5 rounded-[4px]",
                   activeTab === tab.id ? "bg-primary/10 text-primary" : "bg-gray-200/50 text-text-muted"
                 )}>
                   {tab.count}
                 </span>
                 {activeTab === tab.id && (
-                  <motion.div layoutId="tab-underline" className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary rounded-full mx-1" />
+                  <motion.div layoutId="tab-underline" className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary rounded-[4px] mx-1" />
                 )}
               </button>
             ))}
@@ -220,7 +220,7 @@ export default function ManageBookings() {
               <input 
                 type="text" 
                 placeholder="Search LR No or Customer..." 
-                className="w-full pl-9 pr-4 h-11 bg-white border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                className="w-full pl-9 pr-4 h-11 bg-white border border-gray-100 rounded-[8px] text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -228,7 +228,7 @@ export default function ManageBookings() {
             <button 
               onClick={() => setIsFilterModalOpen(true)}
               className={cn(
-                "h-11 px-4 flex items-center gap-2 bg-white border border-gray-100 rounded-xl transition-all hover:bg-gray-50",
+                "h-11 px-4 flex items-center gap-2 bg-white border border-gray-100 rounded-[8px] transition-all hover:bg-gray-50",
                 (filterVehicleNo || filterRoute) && "border-primary/30 bg-primary/5 text-primary"
               )}
             >
@@ -245,7 +245,7 @@ export default function ManageBookings() {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="px-6 py-3 bg-secondary text-white rounded-2xl flex items-center justify-between shadow-xl shadow-secondary/20 shrink-0"
+              className="px-6 py-3 bg-secondary text-white rounded-[8px] flex items-center justify-between shadow-xl shadow-secondary/20 shrink-0"
             >
               <div className="flex items-center gap-4">
                 <span className="text-sm font-black text-white/90">{selectedIds.length} Bookings Selected</span>
@@ -253,20 +253,20 @@ export default function ManageBookings() {
                 <div className="flex items-center gap-2">
                   <button 
                     onClick={() => setIsVehicleModalOpen(true)}
-                    className="px-4 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-black transition-colors flex items-center gap-2"
+                    className="px-4 py-1.5 bg-white/10 hover:bg-white/20 rounded-[4px] text-xs font-black transition-colors flex items-center gap-2"
                   >
                     <Truck className="h-3.5 w-3.5" /> Assign Vehicle
                   </button>
                   <button 
                     onClick={() => handleBulkStatusChange('shipping')}
-                    className="px-4 py-1.5 bg-primary hover:bg-primary/90 rounded-lg text-xs font-black transition-colors flex items-center gap-2"
+                    className="px-4 py-1.5 bg-primary hover:bg-primary/90 rounded-[4px] text-xs font-black transition-colors flex items-center gap-2"
                   >
                     <ArrowUpCircle className="h-3.5 w-3.5" /> Mark as Shipping
                   </button>
                   {activeTab === 'in-place' && (
                     <button 
                       onClick={handleGenerateGDM}
-                      className="px-4 py-1.5 bg-green-600 hover:bg-green-700 rounded-lg text-xs font-black transition-colors flex items-center gap-2"
+                      className="px-4 py-1.5 bg-green-600 hover:bg-green-700 rounded-[4px] text-xs font-black transition-colors flex items-center gap-2"
                     >
                       <Truck className="h-3.5 w-3.5" /> GDM
                     </button>
@@ -284,7 +284,7 @@ export default function ManageBookings() {
         </AnimatePresence>
 
         {/* Table Container */}
-        <div className="flex-1 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col min-h-0">
+        <div className="flex-1 bg-white rounded-[8px] border border-gray-100 shadow-sm overflow-hidden flex flex-col min-h-0">
           <div className="overflow-auto custom-scrollbar flex-1 relative">
             <table className="w-full text-left border-collapse">
               <thead className="bg-gray-50/80 sticky top-0 z-10 backdrop-blur-md">
@@ -311,7 +311,7 @@ export default function ManageBookings() {
                   <tr>
                     <td colSpan={8} className="py-24">
                       <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-500">
-                        <div className="p-4 bg-gray-50 rounded-full">
+                        <div className="p-4 bg-gray-50 rounded-[4px]">
                           <LayoutGrid className="h-12 w-12 text-gray-200" />
                         </div>
                         <div className="text-center">
@@ -337,13 +337,13 @@ export default function ManageBookings() {
                       </td>
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                          <div className="w-1.5 h-1.5 rounded-[4px] bg-primary" />
                           <span className="text-sm font-black text-secondary">{booking.lrNo}</span>
                         </div>
                       </td>
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center border border-gray-100 overflow-hidden shrink-0">
+                          <div className="w-9 h-9 rounded-[8px] bg-gray-100 flex items-center justify-center border border-gray-100 overflow-hidden shrink-0">
                             <span className="text-sm font-black text-secondary">{booking.customerName.charAt(0)}</span>
                           </div>
                           <div className="flex flex-col min-w-0">
@@ -376,7 +376,7 @@ export default function ManageBookings() {
                       <td className="px-6 py-5">
                         {booking.status !== 'in-place' ? (
                           <div className={cn(
-                            "px-3 py-1.5 border rounded-lg inline-flex items-center gap-2",
+                            "px-3 py-1.5 border rounded-[4px] inline-flex items-center gap-2",
                             booking.status === 'shipping' ? "bg-gray-100 border-gray-200" : "bg-primary/5 border-primary/20"
                           )}>
                             <Truck className={cn("h-3 w-3", booking.status === 'shipping' ? "text-secondary" : "text-primary")} />
@@ -390,7 +390,7 @@ export default function ManageBookings() {
                                setIsVehicleModalOpen(true);
                             }}
                             className={cn(
-                              "px-3 py-1.5 border rounded-lg text-[10px] font-bold transition-all flex items-center gap-2 group/btn",
+                              "px-3 py-1.5 border rounded-[4px] text-[10px] font-bold transition-all flex items-center gap-2 group/btn",
                               booking.vehicleNo 
                                 ? "bg-white border-primary/20 text-primary hover:bg-primary/5" 
                                 : "border-dashed border-gray-200 text-text-muted hover:border-primary/30 hover:bg-primary/5"
@@ -423,7 +423,7 @@ export default function ManageBookings() {
                       </td>
                       <td className="px-6 py-5">
                         <span className={cn(
-                          "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tight flex items-center gap-1.5 w-fit shadow-sm",
+                          "px-3 py-1 rounded-[4px] text-[10px] font-black uppercase tracking-tight flex items-center gap-1.5 w-fit shadow-sm",
                           booking.status === 'in-place' && "bg-gray-100 text-gray-600 border border-gray-200",
                           booking.status === 'shipping' && "bg-blue-600 text-white shadow-blue-200",
                           booking.status === 'sent' && "bg-purple-600 text-white shadow-purple-200",
@@ -431,7 +431,7 @@ export default function ManageBookings() {
                           booking.status === 'received' && "bg-green-600 text-white shadow-green-200"
                         )}>
                           <div className={cn(
-                            "w-1 h-1 rounded-full",
+                            "w-1 h-1 rounded-[4px]",
                             booking.status === 'in-place' ? "bg-gray-400" : "bg-white"
                           )} />
                           {booking.status.replace('-', ' ')}
@@ -511,10 +511,10 @@ export default function ManageBookings() {
         {isVehicleModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsVehicleModalOpen(false)} className="absolute inset-0 bg-secondary/40 backdrop-blur-sm" />
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[80vh]">
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-white w-full max-w-lg rounded-[8px] shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[80vh]">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 shrink-0">
                 <h3 className="font-display font-bold text-secondary">Assign Logistics Vehicle</h3>
-                <button onClick={() => setIsVehicleModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X className="h-5 w-5 text-gray-400" /></button>
+                <button onClick={() => setIsVehicleModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-[4px] transition-colors"><X className="h-5 w-5 text-gray-400" /></button>
               </div>
               <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
                 <div className="relative mb-6">
@@ -522,7 +522,7 @@ export default function ManageBookings() {
                   <input 
                     type="text" 
                     placeholder="Search vehicle or driver..." 
-                    className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm" 
+                    className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-100 rounded-[8px] text-sm" 
                     value={vehicleSearch}
                     onChange={(e) => setVehicleSearch(e.target.value)}
                   />
@@ -560,11 +560,11 @@ export default function ManageBookings() {
                                    handleBulkVehicleAssign(mapping.vehicleNumber);
                                    setVehicleSearch('');
                                 }}
-                                className="w-full p-4 border border-primary/20 bg-primary/5 rounded-2xl hover:border-primary/40 text-left transition-all group shrink-0"
+                                className="w-full p-4 border border-primary/20 bg-primary/5 rounded-[8px] hover:border-primary/40 text-left transition-all group shrink-0"
                               >
                                 <div className="flex items-center justify-between mb-3">
                                    <div className="flex items-center gap-3">
-                                     <div className="p-2 bg-primary text-white rounded-xl shadow-lg shadow-primary/20"><Truck className="h-4 w-4" /></div>
+                                     <div className="p-2 bg-primary text-white rounded-[8px] shadow-lg shadow-primary/20"><Truck className="h-4 w-4" /></div>
                                      <span className="font-black text-secondary font-mono tracking-tight text-base">{mapping.vehicleNumber}</span>
                                    </div>
                                    <div className="flex flex-col items-end">
@@ -574,13 +574,13 @@ export default function ManageBookings() {
                                 </div>
                                 <div className="flex items-center gap-4 pt-3 border-t border-primary/10">
                                   <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center border border-primary/10 shadow-sm">
+                                    <div className="w-6 h-6 rounded-[4px] bg-white flex items-center justify-center border border-primary/10 shadow-sm">
                                       <User className="h-3 w-3 text-primary" />
                                     </div>
                                     <span className="text-xs font-bold text-secondary">{mapping.driverName}</span>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center border border-primary/10 shadow-sm">
+                                    <div className="w-6 h-6 rounded-[4px] bg-white flex items-center justify-center border border-primary/10 shadow-sm">
                                       <Navigation className="h-3 w-3 text-primary" />
                                     </div>
                                     <span className="text-[10px] font-black text-text-muted uppercase tracking-tighter">Fastest Path</span>
@@ -605,11 +605,11 @@ export default function ManageBookings() {
                                    handleBulkVehicleAssign(mapping.vehicleNumber);
                                    setVehicleSearch('');
                                 }}
-                                className="w-full p-4 border border-gray-100 rounded-2xl hover:border-primary/30 hover:bg-gray-50 text-left transition-all group shrink-0"
+                                className="w-full p-4 border border-gray-100 rounded-[8px] hover:border-primary/30 hover:bg-gray-50 text-left transition-all group shrink-0"
                               >
                                 <div className="flex items-center justify-between mb-3">
                                    <div className="flex items-center gap-3">
-                                     <div className="p-2 bg-gray-100 text-gray-500 rounded-xl group-hover:bg-primary group-hover:text-white transition-colors"><Truck className="h-4 w-4" /></div>
+                                     <div className="p-2 bg-gray-100 text-gray-500 rounded-[8px] group-hover:bg-primary group-hover:text-white transition-colors"><Truck className="h-4 w-4" /></div>
                                      <span className="font-black text-secondary font-mono tracking-tight">{mapping.vehicleNumber}</span>
                                    </div>
                                    <span className="text-[9px] font-bold text-text-muted uppercase italic tracking-tighter">{mapping.from} → {mapping.to}</span>
@@ -645,7 +645,7 @@ export default function ManageBookings() {
             <motion.div initial={{ x: '100%', opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: '100%', opacity: 0 }} className="absolute right-0 top-0 bottom-0 bg-white w-full max-w-sm shadow-2xl flex flex-col">
               <div className="p-6 border-b border-gray-100 flex items-center justify-between shrink-0">
                 <h3 className="font-display font-bold text-secondary">Advanced Filters</h3>
-                <button onClick={() => setIsFilterModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X className="h-5 w-5 text-gray-400" /></button>
+                <button onClick={() => setIsFilterModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-[4px] transition-colors"><X className="h-5 w-5 text-gray-400" /></button>
               </div>
               <div className="flex-1 overflow-y-auto overflow-x-hidden p-8 space-y-6 custom-scrollbar">
                 <div className="space-y-4">
@@ -656,7 +656,7 @@ export default function ManageBookings() {
                     <button 
                       onClick={() => setFilterVehicleNo('')}
                       className={cn(
-                        "px-4 py-2.5 rounded-xl text-[10px] font-black transition-all border uppercase",
+                        "px-4 py-2.5 rounded-[8px] text-[10px] font-black transition-all border uppercase",
                         !filterVehicleNo ? "bg-primary text-white border-primary shadow-md" : "bg-gray-50 border-gray-100 text-text-muted hover:bg-gray-100"
                       )}
                     >
@@ -667,7 +667,7 @@ export default function ManageBookings() {
                         key={v}
                         onClick={() => setFilterVehicleNo(v)}
                         className={cn(
-                          "px-4 py-2.5 rounded-xl text-[10px] font-black transition-all border uppercase",
+                          "px-4 py-2.5 rounded-[8px] text-[10px] font-black transition-all border uppercase",
                           filterVehicleNo === v ? "bg-primary text-white border-primary shadow-md" : "bg-gray-50 border-gray-100 text-text-muted hover:bg-gray-100"
                         )}
                       >
@@ -685,7 +685,7 @@ export default function ManageBookings() {
                     <button 
                       onClick={() => setFilterRoute('')}
                       className={cn(
-                        "px-4 py-2.5 rounded-xl text-[10px] font-black transition-all border uppercase",
+                        "px-4 py-2.5 rounded-[8px] text-[10px] font-black transition-all border uppercase",
                         !filterRoute ? "bg-secondary text-white border-secondary shadow-md" : "bg-gray-50 border-gray-100 text-text-muted hover:bg-gray-100"
                       )}
                     >
@@ -696,7 +696,7 @@ export default function ManageBookings() {
                         key={r}
                         onClick={() => setFilterRoute(r)}
                         className={cn(
-                          "px-4 py-2.5 rounded-xl text-[10px] font-black transition-all border uppercase whitespace-nowrap",
+                          "px-4 py-2.5 rounded-[8px] text-[10px] font-black transition-all border uppercase whitespace-nowrap",
                           filterRoute === r ? "bg-secondary text-white border-secondary shadow-md" : "bg-gray-50 border-gray-100 text-text-muted hover:bg-gray-100"
                         )}
                       >
@@ -717,9 +717,9 @@ export default function ManageBookings() {
         {isPaymentModalOpen && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsPaymentModalOpen(null)} className="absolute inset-0 bg-secondary/40 backdrop-blur-sm" />
-             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-white w-full max-w-md rounded-2xl shadow-2xl p-8 flex flex-col gap-6">
+             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-white w-full max-w-md rounded-[8px] shadow-2xl p-8 flex flex-col gap-6">
                 <div className="text-center space-y-2">
-                   <div className="w-16 h-16 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-100"><Banknote className="h-8 w-8" /></div>
+                   <div className="w-16 h-16 bg-green-50 text-green-600 rounded-[4px] flex items-center justify-center mx-auto mb-4 border border-green-100"><Banknote className="h-8 w-8" /></div>
                    <h3 className="text-xl font-display font-bold text-secondary">Complete Payment</h3>
                    <p className="text-sm text-text-muted">LR No: <span className="font-bold text-secondary">{isPaymentModalOpen.lrNo}</span></p>
                 </div>
@@ -730,7 +730,7 @@ export default function ManageBookings() {
                     <button 
                       onClick={() => setSelectedPaymentMode('Online')}
                       className={cn(
-                        "flex flex-col items-center gap-3 p-4 border rounded-2xl transition-all font-bold text-sm relative",
+                        "flex flex-col items-center gap-3 p-4 border rounded-[8px] transition-all font-bold text-sm relative",
                         selectedPaymentMode === 'Online' 
                           ? "border-primary bg-primary/5 text-secondary shadow-sm" 
                           : "border-gray-100 bg-white text-text-muted hover:border-gray-200"
@@ -742,7 +742,7 @@ export default function ManageBookings() {
                     <button 
                       onClick={() => setSelectedPaymentMode('Cash')}
                       className={cn(
-                        "flex flex-col items-center gap-3 p-4 border rounded-2xl transition-all font-bold text-sm relative",
+                        "flex flex-col items-center gap-3 p-4 border rounded-[8px] transition-all font-bold text-sm relative",
                         selectedPaymentMode === 'Cash' 
                           ? "border-primary bg-primary/5 text-secondary shadow-sm" 
                           : "border-gray-100 bg-white text-text-muted hover:border-gray-200"
@@ -765,18 +765,18 @@ export default function ManageBookings() {
         {selectedBooking && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedBooking(null)} className="absolute inset-0 bg-secondary/60 backdrop-blur-md" />
-            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative bg-white w-full max-w-4xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative bg-white w-full max-w-4xl rounded-[8px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
               {/* Modern Header */}
               <div className="bg-secondary p-8 text-white flex justify-between items-start shrink-0 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-[4px] blur-3xl -translate-y-1/2 translate-x-1/2" />
                 <div className="relative z-10 flex items-center gap-6">
-                  <div className="w-16 h-16 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/20"><Truck className="h-8 w-8 text-primary" /></div>
+                  <div className="w-16 h-16 bg-white/10 backdrop-blur-xl rounded-[8px] flex items-center justify-center border border-white/20"><Truck className="h-8 w-8 text-primary" /></div>
                   <div>
                     <div className="flex items-center gap-3 mb-1">
                       <h2 className="text-2xl font-black">{selectedBooking.lrNo}</h2>
                       <div className="flex flex-col gap-0.5">
                         <span className={cn(
-                          "text-[10px] px-2 py-0.5 rounded font-black uppercase text-center",
+                          "text-[10px] px-2 py-0.5 rounded-[4px] font-black uppercase text-center",
                           selectedBooking.paymentStatus === 'paid' ? "bg-green-500/20 text-green-300" : "bg-red-500/20 text-red-300"
                         )}>{selectedBooking.paymentStatus}</span>
                         {selectedBooking.paymentMode && (
@@ -787,7 +787,7 @@ export default function ManageBookings() {
                     <p className="text-white/60 text-xs font-bold uppercase tracking-widest">{selectedBooking.status} STATUS</p>
                   </div>
                 </div>
-                <button onClick={() => setSelectedBooking(null)} className="relative z-10 p-2 hover:bg-white/10 rounded-full transition-colors"><X className="h-6 w-6" /></button>
+                <button onClick={() => setSelectedBooking(null)} className="relative z-10 p-2 hover:bg-white/10 rounded-[4px] transition-colors"><X className="h-6 w-6" /></button>
               </div>
 
               {/* Dynamic Content */}
@@ -798,10 +798,10 @@ export default function ManageBookings() {
                     {/* Route Section */}
                     <div className="space-y-4">
                        <h3 className="text-xs font-black text-text-muted uppercase tracking-widest underline decoration-primary decoration-4 underline-offset-8">Logistic Path Flow</h3>
-                       <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100 flex items-center justify-between relative">
+                       <div className="bg-gray-50 p-8 rounded-[8px] border border-gray-100 flex items-center justify-between relative">
                           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-0.5 w-[60%] bg-dashed-border opacity-20" />
                           <div className="flex flex-col items-center gap-3 relative z-10">
-                             <div className="w-12 h-12 bg-white rounded-2xl shadow-xl flex items-center justify-center text-primary border border-gray-100"><MapPin className="h-6 w-6" /></div>
+                             <div className="w-12 h-12 bg-white rounded-[8px] shadow-xl flex items-center justify-center text-primary border border-gray-100"><MapPin className="h-6 w-6" /></div>
                              <div className="text-center">
                                <p className="text-[10px] font-black text-text-muted uppercase">Starting</p>
                                <p className="text-sm font-black text-secondary">{selectedBooking.pickupLocation}</p>
@@ -809,11 +809,11 @@ export default function ManageBookings() {
                           </div>
 
                           <div className="flex flex-col items-center gap-3 relative z-10">
-                              <div className="px-4 py-2 bg-primary text-white rounded-full text-[10px] font-black shadow-lg shadow-primary/20">{selectedBooking.vehicleNo || 'AWAITING VEHICLE'}</div>
+                              <div className="px-4 py-2 bg-primary text-white rounded-[4px] text-[10px] font-black shadow-lg shadow-primary/20">{selectedBooking.vehicleNo || 'AWAITING VEHICLE'}</div>
                           </div>
 
                           <div className="flex flex-col items-center gap-3 relative z-10">
-                             <div className="w-12 h-12 bg-white rounded-2xl shadow-xl flex items-center justify-center text-primary border border-gray-100"><Navigation className="h-6 w-6" /></div>
+                             <div className="w-12 h-12 bg-white rounded-[8px] shadow-xl flex items-center justify-center text-primary border border-gray-100"><Navigation className="h-6 w-6" /></div>
                              <div className="text-center">
                                <p className="text-[10px] font-black text-text-muted uppercase">Destination</p>
                                <p className="text-sm font-black text-secondary">{selectedBooking.deliveryLocation}</p>
@@ -824,20 +824,20 @@ export default function ManageBookings() {
 
                     {/* Basic Grid */}
                     <div className="grid grid-cols-2 gap-6">
-                       <div className="p-6 bg-white border border-gray-100 rounded-3xl shadow-sm space-y-3">
+                       <div className="p-6 bg-white border border-gray-100 rounded-[8px] shadow-sm space-y-3">
                           <p className="text-[10px] font-black text-text-muted uppercase">Customer Interface</p>
                           <div className="flex items-center gap-4">
-                             <div className="w-12 h-12 bg-primary/5 text-primary rounded-2xl flex items-center justify-center"><User className="h-6 w-6" /></div>
+                             <div className="w-12 h-12 bg-primary/5 text-primary rounded-[8px] flex items-center justify-center"><User className="h-6 w-6" /></div>
                              <div>
                                 <p className="text-sm font-black text-secondary">{selectedBooking.customerName}</p>
                                 <p className="text-xs text-text-muted font-bold truncate max-w-[150px]">{selectedBooking.customerEmail}</p>
                              </div>
                           </div>
                        </div>
-                       <div className="p-6 bg-white border border-gray-100 rounded-3xl shadow-sm space-y-3">
+                       <div className="p-6 bg-white border border-gray-100 rounded-[8px] shadow-sm space-y-3">
                           <p className="text-[10px] font-black text-text-muted uppercase">Trip Schedule</p>
                           <div className="flex items-center gap-4">
-                             <div className="w-12 h-12 bg-secondary/5 text-secondary rounded-2xl flex items-center justify-center"><Calendar className="h-6 w-6" /></div>
+                             <div className="w-12 h-12 bg-secondary/5 text-secondary rounded-[8px] flex items-center justify-center"><Calendar className="h-6 w-6" /></div>
                              <div>
                                 <p className="text-sm font-black text-secondary">{formatDate(selectedBooking.travelDate)}</p>
                                 <p className="text-xs text-text-muted font-bold">Planned Arrival: T+1 Day</p>
@@ -846,7 +846,7 @@ export default function ManageBookings() {
                        </div>
                     </div>
                     
-                    <div className="p-8 bg-gray-900 text-white rounded-[2rem] shadow-2xl relative overflow-hidden group">
+                    <div className="p-8 bg-gray-900 text-white rounded-[8px] shadow-2xl relative overflow-hidden group">
                        <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity"><Truck className="h-32 w-32 rotate-12" /></div>
                        <h3 className="text-xs font-black text-white/50 uppercase tracking-widest mb-6 border-b border-white/10 pb-4">Consignment Info</h3>
                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
@@ -872,18 +872,18 @@ export default function ManageBookings() {
 
                   {/* Right Sidebar */}
                   <div className="space-y-6">
-                     <div className="p-6 bg-gray-50 border border-gray-100 rounded-3xl space-y-6">
+                     <div className="p-6 bg-gray-50 border border-gray-100 rounded-[8px] space-y-6">
                         <h4 className="text-[10px] font-black text-text-muted uppercase tracking-widest">Address Ledger</h4>
                         <div className="space-y-6">
                            <div className="flex gap-4">
-                              <div className="w-1 h-full bg-green-500 rounded-full" />
+                              <div className="w-1 h-full bg-green-500 rounded-[4px]" />
                               <div>
                                  <p className="text-[9px] font-black text-green-600 uppercase mb-1">Pick up Point</p>
                                  <p className="text-[11px] font-bold text-secondary leading-relaxed">{selectedBooking.pickupAddress || 'Verified Branch Location'}</p>
                               </div>
                            </div>
                            <div className="flex gap-4">
-                              <div className="w-1 h-full bg-red-500 rounded-full" />
+                              <div className="w-1 h-full bg-red-500 rounded-[4px]" />
                               <div>
                                  <p className="text-[9px] font-black text-red-600 uppercase mb-1">Final Drop Off</p>
                                  <p className="text-[11px] font-bold text-secondary leading-relaxed">{selectedBooking.dropAddress || 'Customer Destination Address'}</p>
@@ -892,15 +892,15 @@ export default function ManageBookings() {
                         </div>
                      </div>
                      
-                     <div className="p-6 border border-gray-100 rounded-3xl space-y-4">
+                     <div className="p-6 border border-gray-100 rounded-[8px] space-y-4">
                         <p className="text-[9px] font-black text-text-muted uppercase text-center border-b border-gray-50 pb-3">Quick Logistics Actions</p>
                         <div className="space-y-2">
-                           <button onClick={() => setSelectedBooking(null)} className="w-full h-11 bg-gray-100 text-secondary text-xs font-black rounded-xl hover:bg-gray-200 transition-all flex items-center justify-center gap-2 italic">DOWNLOAD LR RECEIPT</button>
+                           <button onClick={() => setSelectedBooking(null)} className="w-full h-11 bg-gray-100 text-secondary text-xs font-black rounded-[8px] hover:bg-gray-200 transition-all flex items-center justify-center gap-2 italic">DOWNLOAD LR RECEIPT</button>
                            {selectedBooking.status === 'in-place' && (
-                             <button onClick={() => { handleStatusUpdate(selectedBooking.id, 'shipping'); setSelectedBooking(null); }} className="w-full h-11 bg-primary text-white text-xs font-black rounded-xl hover:scale-105 transition-all shadow-xl shadow-primary/20 italic">DISPATCH SHIPMENT</button>
+                             <button onClick={() => { handleStatusUpdate(selectedBooking.id, 'shipping'); setSelectedBooking(null); }} className="w-full h-11 bg-primary text-white text-xs font-black rounded-[8px] hover:scale-105 transition-all shadow-xl shadow-primary/20 italic">DISPATCH SHIPMENT</button>
                            )}
                            {selectedBooking.status === 'incoming' && (
-                             <button onClick={() => { handleStatusUpdate(selectedBooking.id, 'received'); setSelectedBooking(null); }} className="w-full h-11 bg-green-600 text-white text-xs font-black rounded-xl hover:scale-105 transition-all shadow-xl shadow-green-200 italic">VERIFY & RECEIVE</button>
+                             <button onClick={() => { handleStatusUpdate(selectedBooking.id, 'received'); setSelectedBooking(null); }} className="w-full h-11 bg-green-600 text-white text-xs font-black rounded-[8px] hover:scale-105 transition-all shadow-xl shadow-green-200 italic">VERIFY & RECEIVE</button>
                            )}
                         </div>
                      </div>

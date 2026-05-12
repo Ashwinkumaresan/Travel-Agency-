@@ -97,9 +97,9 @@ export default function Accounts() {
       <div className="h-[calc(100vh-140px)] flex flex-col lg:flex-row gap-6 overflow-hidden">
         
         {/* Left Column: Form (Desktop Only) */}
-        <div className="hidden lg:block w-[380px] h-full bg-white rounded-3xl border border-gray-100 shadow-sm p-8 overflow-y-auto custom-scrollbar shrink-0">
+        <div className="hidden lg:block w-[380px] h-full bg-white rounded-[4px] border border-gray-100 shadow-sm p-8 overflow-y-auto custom-scrollbar shrink-0">
           <div className="flex items-center gap-3 mb-8">
-            <div className="p-3 bg-primary text-white rounded-2xl shadow-lg shadow-primary/20">
+            <div className="p-3 bg-primary text-white rounded-[4px] shadow-lg shadow-primary/20">
               <Calculator className="h-6 w-6" />
             </div>
             <div>
@@ -117,7 +117,7 @@ export default function Accounts() {
               <div className="relative">
                 <div 
                   onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                  className="w-full bg-white border border-gray-100 rounded-2xl p-4 flex items-center justify-between cursor-pointer group hover:border-primary/30 transition-all"
+                  className="w-full bg-white border border-gray-100 rounded-[4px] p-4 flex items-center justify-between cursor-pointer group hover:border-primary/30 transition-all"
                 >
                   <span className={cn("text-xs font-bold", !selectedCategory ? "text-text-muted" : "text-secondary")}>
                     {selectedCategory || "Choose reason..."}
@@ -131,14 +131,14 @@ export default function Accounts() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
-                      className="absolute z-50 top-full left-0 w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl p-2 max-h-[300px] overflow-hidden flex flex-col"
+                      className="absolute z-50 top-full left-0 w-full mt-2 bg-white border border-gray-100 rounded-[4px] shadow-2xl p-2 max-h-[300px] overflow-hidden flex flex-col"
                     >
                       <div className="p-2 border-b border-gray-50 text-black">
                         <input 
                           type="text"
                           autoFocus
                           placeholder="Search or filter..."
-                          className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-1 focus:ring-primary/20"
+                          className="w-full bg-gray-50 border-none rounded-[4px] px-4 py-2 text-xs font-bold focus:ring-1 focus:ring-primary/20"
                           value={categorySearch}
                           onChange={(e) => setCategorySearch(e.target.value)}
                         />
@@ -152,7 +152,7 @@ export default function Accounts() {
                               setShowCategoryDropdown(false);
                             }}
                             className={cn(
-                              "w-full text-left px-4 py-3 text-xs font-bold rounded-xl transition-all cursor-pointer",
+                              "w-full text-left px-4 py-3 text-xs font-bold rounded-[4px] transition-all cursor-pointer",
                               selectedCategory === cat 
                                 ? "bg-primary text-white" 
                                 : "text-text-muted hover:bg-primary/5 hover:text-primary"
@@ -178,7 +178,7 @@ export default function Accounts() {
                   <input 
                     type="text"
                     placeholder="Type your own reason..."
-                    className="w-full bg-white border border-gray-100 rounded-2xl p-4 text-xs font-bold focus:ring-1 focus:ring-primary/20 transition-all text-black"
+                    className="w-full bg-white border border-gray-100 rounded-[4px] p-4 text-xs font-bold focus:ring-1 focus:ring-primary/20 transition-all text-black"
                     value={otherReason}
                     onChange={(e) => setOtherReason(e.target.value)}
                   />
@@ -192,7 +192,7 @@ export default function Accounts() {
                   <input 
                     type="number"
                     placeholder="0.00"
-                    className="w-full bg-white border border-gray-100 rounded-2xl p-4 pl-12 text-xs font-black focus:ring-1 focus:ring-primary/20 transition-all text-black"
+                    className="w-full bg-white border border-gray-100 rounded-[4px] p-4 pl-12 text-xs font-black focus:ring-1 focus:ring-primary/20 transition-all text-black"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                   />
@@ -202,24 +202,24 @@ export default function Accounts() {
               <button 
                 onClick={handleAddExpense}
                 disabled={!selectedCategory || !amount}
-                className="w-full bg-primary text-white rounded-2xl py-5 font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:translate-y-0 cursor-pointer"
+                className="w-full bg-primary text-white rounded-[4px] py-5 font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:translate-y-0 cursor-pointer"
               >
                 <Plus className="h-4 w-4" /> Add Expense
               </button>
             </div>
 
-            <div className="p-6 bg-secondary/5 rounded-3xl border border-secondary/10 space-y-4">
+            {/* <div className="p-6 bg-secondary/5 rounded-[4px] border border-secondary/10 space-y-4">
               <h4 className="text-[10px] font-black text-secondary uppercase tracking-widest flex items-center gap-2">
                 <TrendingUp className="h-3 w-3" /> Revenue Management
               </h4>
               <div className="space-y-2">
                 <p className="text-[10px] font-bold text-text-muted uppercase">Today's Revenue</p>
                 <div className="flex items-end gap-2">
-                  <span className="text-2xl font-black text-secondary font-mono">₹{revenue.toLocaleString()}</span>
+                  <span className="text-2xl font-black text-secondary">₹{revenue.toLocaleString()}</span>
                   <button className="text-[10px] font-black text-primary hover:underline pb-1 cursor-pointer">Update</button>
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
 
@@ -228,37 +228,37 @@ export default function Accounts() {
           
           {/* Top Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0 px-4 lg:px-0">
-            <div className="bg-white p-5 rounded-3xl border border-gray-50 shadow-sm flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center text-green-600">
+            <div className="bg-white p-5 rounded-[4px] border border-gray-50 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 bg-green-50 rounded-[4px] flex items-center justify-center text-green-600">
                 <ArrowUpRight className="h-6 w-6" />
               </div>
               <div>
                 <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Revenue</p>
-                <p className="text-lg font-black text-secondary font-mono">₹{revenue.toLocaleString()}</p>
+                <p className="text-lg font-black text-secondary">₹{revenue.toLocaleString()}</p>
               </div>
             </div>
-            <div className="bg-white p-5 rounded-3xl border border-gray-50 shadow-sm flex items-center gap-4">
-              <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-red-600">
+            <div className="bg-white p-5 rounded-[4px] border border-gray-50 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 bg-red-50 rounded-[4px] flex items-center justify-center text-red-600">
                 <ArrowDownRight className="h-6 w-6" />
               </div>
               <div>
                 <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Spent</p>
-                <p className="text-lg font-black text-secondary font-mono">₹{totalExpenses.toLocaleString()}</p>
+                <p className="text-lg font-black text-secondary">₹{totalExpenses.toLocaleString()}</p>
               </div>
             </div>
-            <div className="bg-primary p-5 rounded-3xl shadow-xl shadow-primary/20 flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-white">
+            <div className="bg-primary p-5 rounded-[4px] shadow-xl shadow-primary/20 flex items-center gap-4">
+              <div className="w-12 h-12 bg-white/20 rounded-[4px] flex items-center justify-center text-white">
                 <CreditCard className="h-6 w-6" />
               </div>
               <div>
                 <p className="text-[10px] font-black text-white/70 uppercase tracking-widest">Balance</p>
-                <p className="text-lg font-black text-white font-mono">₹{balance.toLocaleString()}</p>
+                <p className="text-lg font-black text-white">₹{balance.toLocaleString()}</p>
               </div>
             </div>
           </div>
 
           {/* Table Container */}
-          <div className="flex-1 bg-white rounded-3xl border border-gray-50 shadow-sm overflow-hidden flex flex-col mx-4 lg:mx-0">
+          <div className="flex-1 bg-white rounded-[4px] border border-gray-50 shadow-sm overflow-hidden flex flex-col mx-4 lg:mx-0">
             <div className="p-6 border-b border-gray-50 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <History className="h-5 w-5 text-secondary" />
@@ -266,7 +266,7 @@ export default function Accounts() {
               </div>
               <button 
                 onClick={() => setIsMobileAddOpen(true)}
-                className="lg:hidden p-2 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 cursor-pointer"
+                className="lg:hidden p-2 bg-primary text-white rounded-[4px] shadow-lg shadow-primary/20 cursor-pointer"
               >
                 <Plus className="h-5 w-5" />
               </button>
@@ -299,7 +299,7 @@ export default function Accounts() {
                         </span>
                       </td>
                       <td className="px-6 py-5 text-right">
-                        <span className="text-xs font-black text-red-600 font-mono">
+                        <span className="text-xs font-black text-red-600">
                           - ₹{item.amount.toLocaleString()}
                         </span>
                       </td>
@@ -333,7 +333,7 @@ export default function Accounts() {
             <div className="p-6 bg-gray-50/50 border-t border-gray-50 flex items-center justify-between shrink-0">
                <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Balance after expenses</span>
                <span className={cn(
-                 "text-sm font-black font-mono",
+                 "text-sm font-black",
                  balance >= 0 ? "text-green-600" : "text-red-600"
                )}>
                  ₹{balance.toLocaleString()}
@@ -379,7 +379,7 @@ export default function Accounts() {
                     <div className="relative">
                       <div 
                         onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                        className="w-full bg-white border border-gray-100 rounded-2xl p-4 flex items-center justify-between cursor-pointer group hover:border-primary/30 transition-all"
+                        className="w-full bg-white border border-gray-100 rounded-[4px] p-4 flex items-center justify-between cursor-pointer group hover:border-primary/30 transition-all"
                       >
                         <span className={cn("text-xs font-bold", !selectedCategory ? "text-text-muted" : "text-secondary")}>
                           {selectedCategory || "Choose reason..."}
@@ -393,14 +393,14 @@ export default function Accounts() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 10 }}
-                            className="absolute z-50 bottom-full sm:top-full left-0 w-full mb-2 sm:mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl p-2 max-h-[300px] overflow-hidden flex flex-col"
+                            className="absolute z-50 bottom-full sm:top-full left-0 w-full mb-2 sm:mt-2 bg-white border border-gray-100 rounded-[4px] shadow-2xl p-2 max-h-[300px] overflow-hidden flex flex-col"
                           >
                             <div className="p-2 border-b border-gray-50">
                               <input 
                                 type="text"
                                 autoFocus
                                 placeholder="Search or filter..."
-                                className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-1 focus:ring-primary/20 text-black"
+                                className="w-full bg-gray-50 border-none rounded-[4px] px-4 py-2 text-xs font-bold focus:ring-1 focus:ring-primary/20 text-black"
                                 value={categorySearch}
                                 onChange={(e) => setCategorySearch(e.target.value)}
                               />
@@ -414,7 +414,7 @@ export default function Accounts() {
                                     setShowCategoryDropdown(false);
                                   }}
                                   className={cn(
-                                    "w-full text-left px-4 py-3 text-xs font-bold rounded-xl transition-all cursor-pointer",
+                                    "w-full text-left px-4 py-3 text-xs font-bold rounded-[4px] transition-all cursor-pointer",
                                     selectedCategory === cat 
                                       ? "bg-primary text-white" 
                                       : "text-text-muted hover:bg-primary/5 hover:text-primary"
@@ -434,7 +434,7 @@ export default function Accounts() {
                         <input 
                           type="text"
                           placeholder="Type your own reason..."
-                          className="w-full bg-white border border-gray-100 rounded-2xl p-4 text-xs font-bold focus:ring-1 focus:ring-primary/20 transition-all text-black"
+                          className="w-full bg-white border border-gray-100 rounded-[4px] p-4 text-xs font-bold focus:ring-1 focus:ring-primary/20 transition-all text-black"
                           value={otherReason}
                           onChange={(e) => setOtherReason(e.target.value)}
                         />
@@ -447,7 +447,7 @@ export default function Accounts() {
                         <input 
                           type="number"
                           placeholder="Amount Spent"
-                          className="w-full bg-white border border-gray-100 rounded-2xl p-4 pl-12 text-xs font-black focus:ring-1 focus:ring-primary/20 transition-all text-black"
+                          className="w-full bg-white border border-gray-100 rounded-[4px] p-4 pl-12 text-xs font-black focus:ring-1 focus:ring-primary/20 transition-all text-black"
                           value={amount}
                           onChange={(e) => setAmount(e.target.value)}
                         />
@@ -457,7 +457,7 @@ export default function Accounts() {
                     <button 
                       onClick={handleAddExpense}
                       disabled={!selectedCategory || !amount}
-                      className="w-full bg-primary text-white rounded-2xl py-5 font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3 disabled:opacity-50 cursor-pointer"
+                      className="w-full bg-primary text-white rounded-[4px] py-5 font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3 disabled:opacity-50 cursor-pointer"
                     >
                       <Plus className="h-4 w-4" /> Add Expense
                     </button>

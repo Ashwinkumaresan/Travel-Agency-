@@ -74,7 +74,7 @@ function RouteStopsModal({ isOpen, onClose, from, to, selectedStops, onChange }:
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden border border-gray-100"
+          className="relative bg-white w-full max-w-2xl rounded-[8px] shadow-2xl overflow-hidden border border-gray-100"
         >
           {/* Header */}
           <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
@@ -82,7 +82,7 @@ function RouteStopsModal({ isOpen, onClose, from, to, selectedStops, onChange }:
               <h2 className="text-xl font-display font-bold text-secondary">Select Route Stops</h2>
               <p className="text-xs text-text-muted mt-0.5">Planning path from <span className="text-primary font-bold">{from}</span> to <span className="text-primary font-bold">{to}</span></p>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-[4px] transition-colors">
               <X className="h-5 w-5 text-gray-400" />
             </button>
           </div>
@@ -99,7 +99,7 @@ function RouteStopsModal({ isOpen, onClose, from, to, selectedStops, onChange }:
                   <input 
                     type="text" 
                     placeholder="Search locations..." 
-                    className="w-full pl-9 pr-3 py-2 text-xs border border-gray-100 rounded-lg outline-none focus:border-primary/30"
+                    className="w-full pl-9 pr-3 py-2 text-xs border border-gray-100 rounded-[4px] outline-none focus:border-primary/30"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -112,7 +112,7 @@ function RouteStopsModal({ isOpen, onClose, from, to, selectedStops, onChange }:
                     layout
                     key={stop}
                     onClick={() => addStop(stop)}
-                    className="p-3 border border-gray-50 rounded-xl hover:border-primary/20 hover:bg-primary/5 cursor-pointer flex items-center justify-between group transition-all"
+                    className="p-3 border border-gray-50 rounded-[8px] hover:border-primary/20 hover:bg-primary/5 cursor-pointer flex items-center justify-between group transition-all"
                   >
                     <span className="text-sm font-medium text-secondary">{stop}</span>
                     <Plus className="h-4 w-4 text-gray-300 group-hover:text-primary transition-colors" />
@@ -139,7 +139,7 @@ function RouteStopsModal({ isOpen, onClose, from, to, selectedStops, onChange }:
 
                   {/* Start Point */}
                   <div className="flex items-center gap-4 p-3 opacity-60">
-                    <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center shrink-0 z-10 shadow-sm font-bold text-xs text-secondary italic">START</div>
+                    <div className="w-10 h-10 rounded-[4px] bg-white border border-gray-200 flex items-center justify-center shrink-0 z-10 shadow-sm font-bold text-xs text-secondary italic">START</div>
                     <span className="text-sm font-bold text-secondary">{from}</span>
                   </div>
 
@@ -148,15 +148,15 @@ function RouteStopsModal({ isOpen, onClose, from, to, selectedStops, onChange }:
                       <Reorder.Item 
                         key={stop} 
                         value={stop}
-                        className="flex items-center gap-4 p-3 bg-white border border-gray-100 rounded-xl shadow-sm cursor-grab active:cursor-grabbing hover:border-primary/30 transition-all z-20 group"
+                        className="flex items-center gap-4 p-3 bg-white border border-gray-100 rounded-[8px] shadow-sm cursor-grab active:cursor-grabbing hover:border-primary/30 transition-all z-20 group"
                       >
-                        <div className="w-10 h-10 rounded-full bg-primary/5 flex items-center justify-center shrink-0 border border-primary/10">
+                        <div className="w-10 h-10 rounded-[4px] bg-primary/5 flex items-center justify-center shrink-0 border border-primary/10">
                           <GripVertical className="h-4 w-4 text-primary opacity-30 group-hover:opacity-100 transition-opacity" />
                         </div>
                         <span className="flex-1 text-sm font-bold text-secondary">{stop}</span>
                         <button 
                           onClick={(e) => { e.stopPropagation(); removeStop(stop); }}
-                          className="p-1.5 hover:bg-red-50 text-gray-300 hover:text-red-500 rounded-md transition-colors"
+                          className="p-1.5 hover:bg-red-50 text-gray-300 hover:text-red-500 rounded-[4px] transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -166,7 +166,7 @@ function RouteStopsModal({ isOpen, onClose, from, to, selectedStops, onChange }:
 
                   {/* End Point */}
                   <div className="flex items-center gap-4 p-3 opacity-60">
-                    <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center shrink-0 z-10 shadow-sm font-bold text-xs text-secondary italic">END</div>
+                    <div className="w-10 h-10 rounded-[4px] bg-white border border-gray-200 flex items-center justify-center shrink-0 z-10 shadow-sm font-bold text-xs text-secondary italic">END</div>
                     <span className="text-sm font-bold text-secondary">{to}</span>
                   </div>
                 </div>
@@ -184,7 +184,7 @@ function RouteStopsModal({ isOpen, onClose, from, to, selectedStops, onChange }:
             </button>
             <button 
               onClick={onClose}
-              className="px-8 py-2 bg-primary text-white text-sm font-bold rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all"
+              className="px-8 py-2 bg-primary text-white text-sm font-bold rounded-[8px] shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all"
             >
               Confirm Route Path
             </button>
@@ -322,12 +322,12 @@ export default function RouteMappingPage() {
         <div className="flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Base Hub:</span>
-            <div className="bg-primary/5 text-primary px-4 py-1.5 rounded-full flex items-center gap-2 border border-primary/10">
+            <div className="bg-primary/5 text-primary px-4 py-1.5 rounded-[4px] flex items-center gap-2 border border-primary/10">
               <Building2 className="h-4 w-4" />
               <span className="text-sm font-black">{staffInfo.location}</span>
             </div>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1 bg-secondary/5 rounded-full text-[10px] font-bold text-secondary">
+          <div className="flex items-center gap-2 px-3 py-1 bg-secondary/5 rounded-[4px] text-[10px] font-bold text-secondary">
             <Layers className="h-3.5 w-3.5" />
             {mappings.length} ACTIVE ROUTES
           </div>
@@ -337,9 +337,9 @@ export default function RouteMappingPage() {
           
           {/* Left Column: Form Settings */}
           <div className="lg:col-span-4 space-y-6 overflow-y-auto pr-2 custom-scrollbar">
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-6">
+            <div className="bg-white p-6 rounded-[8px] border border-gray-100 shadow-sm space-y-6">
               <div className="flex items-center gap-3 pb-4 border-b border-gray-50">
-                <div className="p-2 bg-primary rounded-xl text-white shadow-lg shadow-primary/20">
+                <div className="p-2 bg-primary rounded-[8px] text-white shadow-lg shadow-primary/20">
                   <Settings2 className="h-5 w-5" />
                 </div>
                 <h2 className="text-lg font-display font-bold text-secondary">Configuration</h2>
@@ -348,7 +348,7 @@ export default function RouteMappingPage() {
               <form onSubmit={handleAddRoute} className="space-y-5">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Starting From</label>
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 rounded-xl">
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 rounded-[8px]">
                     <Building2 className="h-4 w-4 text-gray-400" />
                     <span className="text-sm font-bold text-secondary">{staffInfo.location}</span>
                   </div>
@@ -379,7 +379,7 @@ export default function RouteMappingPage() {
                   <motion.div 
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
-                    className="p-4 bg-gray-50/50 rounded-xl border border-dashed border-gray-200"
+                    className="p-4 bg-gray-50/50 rounded-[8px] border border-dashed border-gray-200"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-[10px] font-bold text-text-muted uppercase">Route Path</span>
@@ -440,7 +440,7 @@ export default function RouteMappingPage() {
               </form>
 
               {error && (
-                <div className="flex items-center gap-2 text-[10px] font-bold text-red-600 bg-red-50 p-3 rounded-xl border border-red-100">
+                <div className="flex items-center gap-2 text-[10px] font-bold text-red-600 bg-red-50 p-3 rounded-[8px] border border-red-100">
                   <AlertCircle className="h-4 w-4" />
                   {error}
                 </div>
@@ -449,12 +449,12 @@ export default function RouteMappingPage() {
           </div>
 
           {/* Right Column: List Table */}
-          <div className="lg:col-span-8 flex flex-col min-h-0 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="lg:col-span-8 flex flex-col min-h-0 bg-white rounded-[8px] border border-gray-100 shadow-sm overflow-hidden">
             <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50/30">
               <div>
                 <h3 className="font-display font-bold text-secondary flex items-center gap-2">
                   Active Route Mappings
-                  <span className="text-[10px] font-bold bg-white border border-gray-200 text-text-muted px-2 py-0.5 rounded-full">v3.0 Secure</span>
+                  <span className="text-[10px] font-bold bg-white border border-gray-200 text-text-muted px-2 py-0.5 rounded-[4px]">v3.0 Secure</span>
                 </h3>
                 <p className="text-[10px] text-text-muted mt-0.5 font-bold uppercase tracking-widest">Fleet & Trip Distribution</p>
               </div>
@@ -499,7 +499,7 @@ export default function RouteMappingPage() {
                         </td>
                         <td className="px-6 py-5 align-top">
                            {editingId === mapping.id ? (
-                             <div className="p-3 bg-gray-50 rounded-lg border border-gray-100 space-y-3">
+                             <div className="p-3 bg-gray-50 rounded-[4px] border border-gray-100 space-y-3">
                                <div className="flex flex-wrap items-center gap-2">
                                  {editStops.length > 0 ? editStops.map((s, i) => (
                                    <span key={i} className="text-[10px] font-bold bg-white px-2 py-1 rounded border border-gray-100">{s}</span>
@@ -523,7 +523,7 @@ export default function RouteMappingPage() {
                                  {mapping.routePath.map((stop, i) => (
                                    <React.Fragment key={i}>
                                      <div className={cn(
-                                       "px-3 py-1 text-[10px] font-black rounded-lg transition-transform hover:scale-105",
+                                       "px-3 py-1 text-[10px] font-black rounded-[4px] transition-transform hover:scale-105",
                                        i === 0 ? "bg-blue-600 text-white shadow-sm" : 
                                        i === mapping.routePath.length - 1 ? "bg-green-600 text-white shadow-sm" : 
                                        "bg-white border border-gray-200 text-secondary"
@@ -539,7 +539,7 @@ export default function RouteMappingPage() {
                                  ))}
                                </div>
                                <div className="flex items-center gap-2">
-                                 <span className="text-[9px] font-black uppercase bg-primary text-white px-2 py-0.5 rounded-full ring-4 ring-primary/10">
+                                 <span className="text-[9px] font-black uppercase bg-primary text-white px-2 py-0.5 rounded-[4px] ring-4 ring-primary/10">
                                    {mapping.stopsCount || 0} Intermediate Stops
                                  </span>
                                </div>
@@ -564,7 +564,7 @@ export default function RouteMappingPage() {
                                 />
                               ) : (
                                 <>
-                                  <div className="p-1.5 bg-gray-50 rounded-lg">
+                                  <div className="p-1.5 bg-gray-50 rounded-[4px]">
                                     <UserIcon className="h-3 w-3 text-gray-400" />
                                   </div>
                                   <span className="text-xs font-bold text-text-main">{mapping.driverName}</span>
@@ -581,7 +581,7 @@ export default function RouteMappingPage() {
                                 />
                               ) : (
                                 <>
-                                  <div className="p-1.5 bg-gray-50 rounded-lg">
+                                  <div className="p-1.5 bg-gray-50 rounded-[4px]">
                                     <Truck className="h-3 w-3 text-gray-400" />
                                   </div>
                                   <span className="text-xs font-mono font-black text-secondary">{mapping.vehicleNumber}</span>
@@ -596,14 +596,14 @@ export default function RouteMappingPage() {
                               <>
                                 <button 
                                   onClick={() => handleSaveEdit(mapping.id)}
-                                  className="w-8 h-8 flex items-center justify-center text-green-600 hover:bg-green-50 rounded-xl transition-colors border border-green-100"
+                                  className="w-8 h-8 flex items-center justify-center text-green-600 hover:bg-green-50 rounded-[8px] transition-colors border border-green-100"
                                   title="Save"
                                 >
                                   <Save className="h-4 w-4" />
                                 </button>
                                 <button 
                                   onClick={() => setEditingId(null)}
-                                  className="w-8 h-8 flex items-center justify-center text-gray-400 hover:bg-gray-100 rounded-xl transition-colors border border-gray-100"
+                                  className="w-8 h-8 flex items-center justify-center text-gray-400 hover:bg-gray-100 rounded-[8px] transition-colors border border-gray-100"
                                   title="Cancel"
                                 >
                                   <X className="h-4 w-4" />

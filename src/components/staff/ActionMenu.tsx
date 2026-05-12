@@ -69,7 +69,7 @@ export default function ActionMenu({ items, className }: ActionMenuProps) {
         ref={buttonRef}
         type="button"
         onClick={toggleOpen}
-        className="p-1.5 text-text-muted hover:bg-gray-100 rounded-full transition-colors focus:outline-none"
+        className="p-1.5 text-text-muted hover:bg-gray-100 rounded-[8px] transition-colors focus:outline-none"
       >
         <MoreVertical className="h-4 w-4" />
       </button>
@@ -77,7 +77,7 @@ export default function ActionMenu({ items, className }: ActionMenuProps) {
       {isOpen && createPortal(
         <div 
           id="action-menu-portal"
-          className="fixed z-[9999] w-40 bg-white border border-gray-100 rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in duration-150 origin-top-right"
+          className="fixed z-[9999] w-40 bg-white border border-gray-100 rounded-[8px] shadow-xl overflow-hidden animate-in fade-in zoom-in duration-150 origin-top-right"
           style={{ 
             top: coords.top + 4, 
             left: coords.left

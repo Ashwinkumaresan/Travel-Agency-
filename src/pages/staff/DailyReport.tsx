@@ -157,9 +157,9 @@ export default function DailyReport() {
     <PortalLayout role="staff" title="Daily Courier Report">
       <div className="space-y-6">
         {/* Header Section */}
-        <div className="bg-white p-6 rounded-lg border border-gray-100 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="bg-white p-6 rounded-[4px] border border-gray-100 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-4">
-            <div className="bg-primary/10 p-3 rounded-lg">
+            <div className="bg-primary/10 p-3 rounded-[4px]">
               <Calendar className="h-6 w-6 text-primary" />
             </div>
             <div>
@@ -186,7 +186,7 @@ export default function DailyReport() {
               { label: 'Delivered', value: stats.delivered, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
               { label: 'Paid', value: stats.paid, icon: Package, color: 'text-orange-600', bg: 'bg-orange-50' },
             ].map((stat, i) => (
-              <div key={i} className={cn("px-4 py-2 rounded-lg border border-gray-50 flex flex-col items-center justify-center min-w-[80px]", stat.bg)}>
+              <div key={i} className={cn("px-4 py-2 rounded-[4px] border border-gray-50 flex flex-col items-center justify-center min-w-[80px]", stat.bg)}>
                 <span className={cn("text-lg font-bold", stat.color)}>{stat.value}</span>
                 <span className="text-[10px] uppercase font-bold text-text-muted tracking-wider">{stat.label}</span>
               </div>
@@ -197,7 +197,7 @@ export default function DailyReport() {
         {/* Filter / Tabs */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex p-1 bg-gray-100 rounded-md">
+            <div className="flex p-1 bg-gray-100 rounded-[4px]">
               {[
                 { id: 'all', label: 'All' },
                 { id: 'in-place', label: 'In Place (Received)' },
@@ -207,7 +207,7 @@ export default function DailyReport() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
                   className={cn(
-                    "px-4 py-1.5 text-[10px] font-bold rounded-md transition-all whitespace-nowrap",
+                    "px-4 py-1.5 text-[10px] font-bold rounded-[4px] transition-all whitespace-nowrap",
                     activeTab === tab.id 
                       ? "bg-white text-secondary shadow-sm" 
                       : "text-text-muted hover:text-secondary"
@@ -218,7 +218,7 @@ export default function DailyReport() {
               ))}
             </div>
 
-            <div className="flex p-1 bg-gray-100 rounded-md">
+            <div className="flex p-1 bg-gray-100 rounded-[4px]">
               {[
                 { id: 'all', label: 'All Payments' },
                 { id: 'paid', label: 'Paid' },
@@ -228,7 +228,7 @@ export default function DailyReport() {
                   key={filter.id}
                   onClick={() => setPaymentFilter(filter.id as any)}
                   className={cn(
-                    "px-4 py-1.5 text-[10px] font-bold rounded-md transition-all whitespace-nowrap",
+                    "px-4 py-1.5 text-[10px] font-bold rounded-[4px] transition-all whitespace-nowrap",
                     paymentFilter === filter.id 
                       ? "bg-secondary text-white shadow-sm" 
                       : "text-text-muted hover:text-secondary"
@@ -253,7 +253,7 @@ export default function DailyReport() {
         </div>
 
         {/* Courier List Table */}
-        <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-[4px] border border-gray-100 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead className="bg-gray-50 border-b border-gray-100">
@@ -281,7 +281,7 @@ export default function DailyReport() {
                     return (
                       <tr key={booking.id} className="hover:bg-gray-50/50 transition-colors">
                         <td className="px-6 py-4">
-                          <span className="text-xs font-black text-secondary font-mono">{booking.lrNo || booking.id}</span>
+                          <span className="text-xs font-black text-secondary">{booking.lrNo || booking.id}</span>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-col">
@@ -312,14 +312,14 @@ export default function DailyReport() {
                           <div className="flex justify-center">
                             {isDelivered ? (
                               <div className="flex flex-col items-center gap-2">
-                                <div className="flex items-center gap-1 shadow-sm px-2 py-0.5 bg-green-50 rounded-full border border-green-100">
+                                <div className="flex items-center gap-1 shadow-sm px-2 py-0.5 bg-green-50 rounded-[4px] border border-green-100">
                                   <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
                                   <span className="text-[8px] font-black text-green-600 uppercase tracking-tighter">Delivered</span>
                                 </div>
                                 {booking.paymentStatus === 'to-pay' && (
                                   <button 
                                     onClick={() => setIsPaymentModalOpen(booking)}
-                                    className="px-3 py-1 bg-primary text-white text-[8px] font-black uppercase rounded-lg shadow-md hover:bg-primary/90 transition-all"
+                                    className="px-3 py-1 bg-primary text-white text-[8px] font-black uppercase rounded-[4px] shadow-md hover:bg-primary/90 transition-all"
                                   >
                                     Update Payment
                                   </button>
@@ -364,13 +364,13 @@ export default function DailyReport() {
                     <h2 className="text-xl font-black text-secondary">Collect Payment</h2>
                     <p className="text-[10px] font-bold text-text-muted mt-1 uppercase tracking-widest">DR ID: {isPaymentModalOpen.lrNo || isPaymentModalOpen.id}</p>
                   </div>
-                  <button onClick={() => setIsPaymentModalOpen(null)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                  <button onClick={() => setIsPaymentModalOpen(null)} className="p-2 hover:bg-gray-100 rounded-[4px] transition-colors">
                     <X className="h-5 w-5 text-gray-400" />
                   </button>
                 </div>
 
                 <div className="p-8 pt-0 space-y-6">
-                  <div className="bg-gray-50 p-4 rounded-2xl flex justify-between items-center border border-gray-100">
+                  <div className="bg-gray-50 p-4 rounded-[8px] flex justify-between items-center border border-gray-100">
                     <div>
                       <p className="text-[10px] font-bold text-text-muted uppercase">Amount to Collect</p>
                       <p className="text-2xl font-black text-primary">{formatCurrency(isPaymentModalOpen.totalPrice)}</p>
@@ -387,7 +387,7 @@ export default function DailyReport() {
                       <button 
                         onClick={() => setSelectedPaymentMode('Online')}
                         className={cn(
-                          "flex flex-col items-center gap-3 p-4 border rounded-2xl transition-all font-bold text-sm relative",
+                          "flex flex-col items-center gap-3 p-4 border rounded-[8px] transition-all font-bold text-sm relative",
                           selectedPaymentMode === 'Online' 
                             ? "border-primary bg-primary/5 text-secondary shadow-sm" 
                             : "border-gray-100 bg-white text-text-muted hover:border-gray-200"
@@ -399,7 +399,7 @@ export default function DailyReport() {
                       <button 
                         onClick={() => setSelectedPaymentMode('Cash')}
                         className={cn(
-                          "flex flex-col items-center gap-3 p-4 border rounded-2xl transition-all font-bold text-sm relative",
+                          "flex flex-col items-center gap-3 p-4 border rounded-[8px] transition-all font-bold text-sm relative",
                           selectedPaymentMode === 'Cash' 
                             ? "border-primary bg-primary/5 text-secondary shadow-sm" 
                             : "border-gray-100 bg-white text-text-muted hover:border-gray-200"
@@ -415,13 +415,13 @@ export default function DailyReport() {
                     <div className="flex gap-3">
                       <button 
                         onClick={() => setIsPaymentModalOpen(null)}
-                        className="flex-1 py-4 px-6 rounded-2xl font-black text-xs text-text-muted hover:bg-gray-100 transition-all border border-gray-100"
+                        className="flex-1 py-4 px-6 rounded-[8px] font-black text-xs text-text-muted hover:bg-gray-100 transition-all border border-gray-100"
                       >
                         Cancel
                       </button>
                       <button 
                         onClick={() => handlePaymentAndDeliver(false)}
-                        className="flex-[2] py-4 px-6 bg-primary text-white rounded-2xl font-black text-xs shadow-xl shadow-primary/20 flex items-center justify-center gap-2"
+                        className="flex-[2] py-4 px-6 bg-primary text-white rounded-[8px] font-black text-xs shadow-xl shadow-primary/20 flex items-center justify-center gap-2"
                       >
                         {isPaymentModalOpen.status === 'delivered' ? 'Confirm Payment' : 'Confirm & Pay'}
                       </button>
@@ -429,7 +429,7 @@ export default function DailyReport() {
                     {isPaymentModalOpen.status !== 'delivered' && (
                       <button 
                         onClick={() => handlePaymentAndDeliver(true)}
-                        className="w-full py-4 px-6 bg-secondary/10 text-secondary border border-secondary/20 rounded-2xl font-black text-xs hover:bg-secondary/20 transition-all flex items-center justify-center gap-2"
+                        className="w-full py-4 px-6 bg-secondary/10 text-secondary border border-secondary/20 rounded-[8px] font-black text-xs hover:bg-secondary/20 transition-all flex items-center justify-center gap-2"
                       >
                         <Clock className="h-4 w-4" /> Deliver (Keep To Pay)
                       </button>

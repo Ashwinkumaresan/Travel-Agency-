@@ -37,16 +37,16 @@ const NAV_ITEMS = {
     { label: 'Profile', icon: User, path: '/app/profile' },
   ],
   staff: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/staff/dashboard' },
+    // { label: 'Dashboard', icon: LayoutDashboard, path: '/staff/dashboard' },
     { label: 'Book Courier', icon: Package, path: '/staff/book' },
-    { label: 'GDM', icon: FileText, path: '/staff/gdm' },
-    { label: 'Route Mapping', icon: Truck, path: '/staff/mapping' },
-    { label: 'Daily Report', icon: FileText, path: '/staff/report' },
     { label: 'Manage Bookings', icon: Briefcase, path: '/staff/bookings' },
+    { label: 'GDM', icon: FileText, path: '/staff/gdm' },
+    { label: 'Daily Report', icon: FileText, path: '/staff/report' },
     { label: 'Accounts', icon: Calculator, path: '/staff/accounts' },
-    { label: 'Tickets', icon: Ticket, path: '/staff/tickets' },
-    { label: 'Customers', icon: Users, path: '/staff/customers' },
-    { label: 'My Profile', icon: User, path: '/staff/profile' },
+    { label: 'Route Mapping', icon: Truck, path: '/staff/mapping' },
+    // { label: 'Tickets', icon: Ticket, path: '/staff/tickets' },
+    // { label: 'Customers', icon: Users, path: '/staff/customers' },
+    // { label: 'My Profile', icon: User, path: '/staff/profile' },
   ],
   admin: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
@@ -81,16 +81,13 @@ export default function Sidebar({ role, isOpen, setIsOpen, isCollapsed, setIsCol
         {/* Logo */}
         <div className="p-6 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 overflow-hidden">
-            <div className="bg-primary p-2 rounded-lg shrink-0">
-              <Compass className="h-6 w-6 text-white" />
-            </div>
             {!isCollapsed && (
               <motion.span 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="text-sidebar-logo font-display font-bold text-secondary tracking-tight whitespace-nowrap"
+                className="font-display text-[14px] font-bold text-secondary tracking-tight whitespace-nowrap"
               >
-                Voyage<span className="text-primary">Arc</span>
+                Sa Salem Super <span className="text-primary">Service</span>
               </motion.span>
             )}
           </Link>
@@ -156,7 +153,7 @@ export default function Sidebar({ role, isOpen, setIsOpen, isCollapsed, setIsCol
             )}
           </button>
 
-          <div className={cn(
+          {/* <div className={cn(
             "flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100",
             isCollapsed ? "justify-center" : ""
           )}>
@@ -169,7 +166,7 @@ export default function Sidebar({ role, isOpen, setIsOpen, isCollapsed, setIsCol
                 <p className="text-email text-text-muted truncate uppercase tracking-wider font-medium">{role}</p>
               </div>
             )}
-          </div>
+          </div> */}
 
           <Link
             to="/login"

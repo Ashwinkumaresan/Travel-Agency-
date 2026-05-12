@@ -83,7 +83,7 @@ export default function SearchableSelect({
         ref={buttonRef}
         type="button"
         onClick={toggleOpen}
-        className="flex items-center justify-between w-full px-3 h-11 text-sm font-medium text-secondary bg-white border border-gray-200 rounded-md hover:border-primary transition-all focus:outline-none focus:ring-2 focus:ring-primary/20"
+        className="flex items-center justify-between w-full px-3 h-11 text-sm font-medium text-secondary bg-white border border-gray-200 rounded-[4px] hover:border-primary transition-all focus:outline-none focus:ring-2 focus:ring-primary/20"
       >
         <div className="flex items-center gap-2 truncate">
           {icon && <span className="text-gray-400 shrink-0">{icon}</span>}
@@ -95,7 +95,7 @@ export default function SearchableSelect({
       {isOpen && createPortal(
         <div 
           id="searchable-select-portal"
-          className="fixed z-[9999] bg-white border border-gray-100 rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-left"
+          className="fixed z-[9999] bg-white border border-gray-100 rounded-[8px] shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-left"
           style={{ 
             top: coords.top + 4, 
             left: coords.left,
@@ -109,14 +109,14 @@ export default function SearchableSelect({
                 type="text"
                 autoFocus
                 placeholder={searchPlaceholder}
-                className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-100 rounded-md focus:outline-none focus:border-primary bg-gray-50/50"
+                className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-100 rounded-[4px] focus:outline-none focus:border-primary bg-gray-50/50"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
               {searchTerm && (
                 <button 
                   onClick={() => setSearchTerm('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-gray-200 rounded-full"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-gray-200 rounded-[8px]"
                 >
                   <X className="h-3 w-3 text-gray-400" />
                 </button>

@@ -13,7 +13,7 @@ export default function Login() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (role === 'customer') navigate('/app/dashboard');
-    else if (role === 'staff') navigate('/staff/dashboard');
+    else if (role === 'staff') navigate('/staff/book');
     else navigate('/admin/dashboard');
   };
 
