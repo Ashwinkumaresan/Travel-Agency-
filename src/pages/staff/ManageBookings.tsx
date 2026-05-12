@@ -1,13 +1,19 @@
 import PortalLayout from '@/components/layout/PortalLayout';
-import { MOCK_BOOKINGS, MOCK_ROUTE_MAPPINGS, MOCK_VEHICLES } from '@/constants';
+import { MOCK_BOOKINGS, MOCK_ROUTE_MAPPINGS, MOCK_DRIVERS } from '@/constants';
 import { cn, formatCurrency, formatDate } from '@/lib/utils';
-import { Search, Filter, Eye, CheckCircle, XCircle, X, User, Phone, MapPin, Calendar, Users, CreditCard, Info, Calculator, Truck } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import { 
+  Search, Filter, Eye, CheckCircle, X, User, Phone, MapPin, 
+  Calendar, Users, CreditCard, Info, Truck, Check, 
+  ChevronRight, ArrowLeftRight, Clock, Hash, ShieldCheck,
+  Settings2, LayoutGrid, List, MoreVertical,
+  Banknote, Wallet, ArrowUpCircle, ArrowDownCircle,
+  Navigation, XCircle
+} from 'lucide-react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Booking } from '@/types';
+import { Booking, RouteMapping, PaymentMode, GDM } from '@/types';
 import { useNavigate } from 'react-router-dom';
 import { Toaster, toast } from 'sonner';
-import SearchableSelect from '@/components/staff/SearchableSelect';
 import ActionMenu from '@/components/staff/ActionMenu';
 
 export default function ManageBookings() {
@@ -15,87 +21,111 @@ export default function ManageBookings() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'in-place' | 'shipping' | 'sent' | 'incoming' | 'received'>('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [bookings, setBookings] = useState<Booking[]>(MOCK_BOOKINGS.map(b => {
-    const pickup = b.pickupLocation || 'Chennai';
-    const delivery = b.deliveryLocation || 'Salem';
-    const mapping = MOCK_ROUTE_MAPPINGS.find(m => m.from === pickup && m.to === delivery);
-    
-    return {
-      ...b,
-      status: b.status === 'confirmed' ? 'in-place' : b.status as any,
-      pickupLocation: pickup,
-      deliveryLocation: delivery,
-      vehicleNo: b.vehicleNo || (mapping ? mapping.vehicleNumber : 'Not Assigned')
-    };
-  }));
+  
+  // Modals state
+  const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
+  const [vehicleSearch, setVehicleSearch] = useState('');
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState<Booking | null>(null);
+  const [selectedPaymentMode, setSelectedPaymentMode] = useState<'Online' | 'Cash'>('Online');
+  
+  // Filter state
+  const [filterVehicleNo, setFilterVehicleNo] = useState('');
+  const [filterRoute, setFilterRoute] = useState('');
+
+  const [bookings, setBookings] = useState<Booking[]>(() => {
+    const saved = localStorage.getItem('voyage_bookings');
+    return saved ? JSON.parse(saved) : MOCK_BOOKINGS;
+  });
+  
+  const saveBookings = (newBookings: Booking[]) => {
+    setBookings(newBookings);
+    localStorage.setItem('voyage_bookings', JSON.stringify(newBookings));
+  };
   
   const navigate = useNavigate();
-  
-  // Mocking the current staff's location (e.g., Chennai)
   const currentStaffLocation = 'Chennai';
 
-  const handleStatusUpdate = (bookingId: string) => {
-    setBookings(prev => prev.map(b => {
-      if (b.id === bookingId) {
-        if (b.status === 'in-place') {
-          toast.success(`Booking ${bookingId} is now Shipping`);
-          // Simulate auto transition from Shipping to Sent
-          setTimeout(() => {
-            setBookings(current => current.map(currB => 
-              currB.id === bookingId ? { ...currB, status: 'sent' } : currB
-            ));
-            toast.info(`Booking ${bookingId} has been Sent`);
-          }, 3000);
-          return { ...b, status: 'shipping' };
-        }
-        if (b.status === 'sent' || b.status === 'incoming') {
-          toast.success(`Booking ${bookingId} has been Received`);
-          return { ...b, status: 'received' };
-        }
-      }
-      return b;
-    }));
+  const handleStatusUpdate = (bookingId: string, nextStatus: Booking['status']) => {
+    const updated = bookings.map(b => 
+      b.id === bookingId ? { ...b, status: nextStatus } : b
+    );
+    saveBookings(updated);
+    toast.success(`Booking ${bookingId} moved to ${nextStatus.replace('-', ' ')}`);
   };
 
-  const handleVehicleUpdate = (bookingId: string, vehicleNo: string) => {
-    setBookings(prev => prev.map(b => 
-      b.id === bookingId ? { ...b, vehicleNo } : b
-    ));
-    toast.success(`Vehicle updated for ${bookingId}`);
+  const handlePaymentUpdate = (bookingId: string) => {
+    const updated = bookings.map(b => 
+      b.id === bookingId ? { ...b, paymentStatus: 'paid' as const, paymentMode: selectedPaymentMode } : b
+    );
+    saveBookings(updated);
+    toast.success(`Payment confirmed via ${selectedPaymentMode} for ${bookingId}`);
+    setIsPaymentModalOpen(null);
   };
 
-  const handleBulkStatusUpdate = () => {
-    if (selectedIds.length === 0) return;
+  const handleBulkVehicleAssign = (vehicleNo: string) => {
+    const updated = bookings.map(b => 
+      (selectedIds.includes(b.id) && b.status === 'in-place') ? { ...b, vehicleNo } : b
+    );
+    saveBookings(updated);
+    toast.success(`Vehicle assigned to eligible bookings`);
+    setSelectedIds([]);
+    setIsVehicleModalOpen(false);
+  };
+
+  const handleBulkStatusChange = (status: Booking['status']) => {
+    const updated = bookings.map(b => 
+      selectedIds.includes(b.id) ? { ...b, status } : b
+    );
+    saveBookings(updated);
+    toast.success(`${selectedIds.length} bookings marked as ${status.replace('-', ' ')}`);
+    setSelectedIds([]);
+  };
+
+  const handleGenerateGDM = () => {
+    const selectedBookings = bookings.filter(b => selectedIds.includes(b.id));
     
-    let updatedCount = 0;
-    setBookings(prev => prev.map(b => {
-      if (selectedIds.includes(b.id)) {
-        if (b.status === 'in-place') {
-          updatedCount++;
-          // Simulate auto transition from Shipping to Sent
-          setTimeout(() => {
-            setBookings(current => current.map(currB => 
-              currB.id === b.id ? { ...currB, status: 'sent' } : currB
-            ));
-          }, 3000);
-          return { ...b, status: 'shipping' };
-        }
-        if (b.status === 'sent' || b.status === 'incoming') {
-          updatedCount++;
-          return { ...b, status: 'received' };
-        }
-      }
-      return b;
-    }));
+    // Validate assignments
+    const unassigned = selectedBookings.filter(b => !b.vehicleNo);
+    if (unassigned.length > 0) {
+      toast.error(`Assign vehicle before generating GDM for ${unassigned.length} bookings`);
+      return;
+    }
 
-    toast.success(`Updated ${updatedCount} bookings successfully`);
+    // Capture the first booking's route info for the GDM header (assuming same route for bulk)
+    const first = selectedBookings[0];
+    const mapping = MOCK_ROUTE_MAPPINGS.find(m => m.vehicleNumber === first.vehicleNo);
+    const driver = MOCK_DRIVERS.find(d => d.id === mapping?.driverId);
+    
+    const newGDM: GDM = {
+      id: `GDM-${Date.now()}`,
+      gdmNo: `GDM-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+      vehicleNo: first.vehicleNo || 'TN-XX-XX-XXXX',
+      driverName: mapping?.driverName || 'Assigned Driver',
+      driverPhone: driver?.phone || '+91 00000 00000',
+      route: `${first.pickupLocation} → ${first.deliveryLocation}`,
+      totalLRCount: selectedBookings.length,
+      totalPackages: selectedBookings.length, // Simplified
+      totalWeight: selectedBookings.reduce((sum, b) => sum + (b.weightKg || 0), 0),
+      totalFreight: selectedBookings.reduce((sum, b) => sum + b.totalPrice, 0),
+      paidCount: selectedBookings.filter(b => b.paymentStatus === 'paid').length,
+      toPayCount: selectedBookings.filter(b => b.paymentStatus !== 'paid').length,
+      dispatchDate: new Date().toISOString(),
+      status: 'generated',
+      lrIds: selectedIds
+    };
+
+    // Store in localStorage for cross-page visibility in this demo environment
+    const existingGDMs = JSON.parse(localStorage.getItem('voyage_gdms') || '[]');
+    localStorage.setItem('voyage_gdms', JSON.stringify([newGDM, ...existingGDMs]));
+
+    toast.success(`GDM Generated successfully for ${selectedIds.length} bookings`);
     setSelectedIds([]);
   };
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      const ids = filteredBookings.map(b => b.id);
-      setSelectedIds(ids);
+      setSelectedIds(filteredBookings.map(b => b.id));
     } else {
       setSelectedIds([]);
     }
@@ -107,381 +137,792 @@ export default function ManageBookings() {
     );
   };
 
-  const filteredBookings = bookings.filter(b => {
-    const matchesSearch = b.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         b.customerName.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Logic for "Incoming" vs "Sent"
-    // If status is 'sent', it shows as 'Sent' for origin staff and 'Incoming' for destination staff
-    let displayStatus = b.status;
-    if (b.status === 'sent') {
-      if (currentStaffLocation === b.deliveryLocation) displayStatus = 'incoming';
-      else displayStatus = 'sent';
-    }
+  const uniqueTableVehicles = useMemo(() => {
+    return Array.from(new Set(bookings.map(b => b.vehicleNo).filter(Boolean))) as string[];
+  }, [bookings]);
 
-    const matchesTab = activeTab === 'all' ? true : displayStatus === activeTab;
+  const uniqueTableRoutes = useMemo(() => {
+    return Array.from(new Set(bookings.map(b => `${b.pickupLocation} → ${b.deliveryLocation}`))) as string[];
+  }, [bookings]);
 
-    return matchesSearch && matchesTab;
-  });
+  const filteredBookings = useMemo(() => {
+    return bookings.filter(b => {
+      const matchesSearch = 
+        b.lrNo?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        b.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const statusMatches = activeTab === 'all' 
+        ? true 
+        : activeTab === 'sent'
+          ? (b.status === 'sent' || b.status === 'received')
+          : b.status === activeTab;
+      
+      // Location-aware filtering logic
+      let locationMatches = true;
+      if (activeTab === 'in-place' || activeTab === 'shipping' || activeTab === 'sent') {
+        locationMatches = b.pickupLocation === currentStaffLocation;
+      } else if (activeTab === 'incoming' || activeTab === 'received') {
+        locationMatches = b.deliveryLocation === currentStaffLocation;
+      }
+      
+      const vehicleMatches = !filterVehicleNo || b.vehicleNo === filterVehicleNo;
+      const routeMatches = !filterRoute || 
+                          `${b.pickupLocation} → ${b.deliveryLocation}` === filterRoute;
+
+      return matchesSearch && statusMatches && locationMatches && vehicleMatches && routeMatches;
+    });
+  }, [bookings, searchTerm, activeTab, filterVehicleNo, filterRoute, currentStaffLocation]);
 
   const tabs = [
-    { id: 'all', label: 'All' },
-    { id: 'in-place', label: 'In Place' },
-    { id: 'shipping', label: 'Shipping' },
-    { id: 'sent', label: 'Sent' },
-    { id: 'incoming', label: 'Incoming' },
-    { id: 'received', label: 'Received' },
+    { id: 'all', label: 'All', count: bookings.length },
+    { id: 'in-place', label: 'In Place', count: bookings.filter(b => b.status === 'in-place' && b.pickupLocation === currentStaffLocation).length },
+    { id: 'shipping', label: 'Shipping', count: bookings.filter(b => b.status === 'shipping' && b.pickupLocation === currentStaffLocation).length },
+    { id: 'sent', label: 'Sent', count: bookings.filter(b => (b.status === 'sent' || b.status === 'received') && b.pickupLocation === currentStaffLocation).length },
+    { id: 'incoming', label: 'Incoming', count: bookings.filter(b => b.status === 'incoming' && b.deliveryLocation === currentStaffLocation).length },
+    { id: 'received', label: 'Received', count: bookings.filter(b => b.status === 'received' && b.deliveryLocation === currentStaffLocation).length },
   ] as const;
 
   return (
     <PortalLayout role="staff" title="Manage Bookings">
-      <div className="space-y-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 z-20 bg-white/80 backdrop-blur-md pb-4 pt-2">
-          {/* Tabs on the left */}
-          <div className="flex p-1 bg-gray-100 rounded-md w-full md:w-fit overflow-x-auto custom-scrollbar">
-            <div className="flex gap-1 min-w-max md:min-w-0">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    "px-5 py-1.5 text-sidebar-menu rounded-md transition-all duration-200 whitespace-nowrap",
-                    activeTab === tab.id 
-                      ? "bg-primary text-white shadow-lg shadow-primary/20 font-bold" 
-                      : "text-text-muted hover:bg-primary-light hover:text-primary font-medium"
-                  )}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+      <div className="max-w-7xl mx-auto h-full flex flex-col gap-6 overflow-hidden">
+        
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
+          <div className="flex items-center gap-3 bg-gray-100/50 p-1 rounded-xl w-full md:w-fit overflow-x-auto custom-scrollbar border border-gray-100">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={cn(
+                  "px-4 py-2 rounded-lg transition-all duration-300 relative flex items-center gap-2",
+                  activeTab === tab.id 
+                    ? "bg-white text-secondary shadow-md font-bold" 
+                    : "text-text-muted hover:text-secondary font-medium"
+                )}
+              >
+                <span className="text-xs uppercase tracking-wider">{tab.label}</span>
+                <span className={cn(
+                  "text-[10px] px-1.5 py-0.5 rounded-md",
+                  activeTab === tab.id ? "bg-primary/10 text-primary" : "bg-gray-200/50 text-text-muted"
+                )}>
+                  {tab.count}
+                </span>
+                {activeTab === tab.id && (
+                  <motion.div layoutId="tab-underline" className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary rounded-full mx-1" />
+                )}
+              </button>
+            ))}
           </div>
 
-          {/* Search and Filter on the right */}
-          <div className="flex gap-3 w-full md:w-auto items-center">
-            <AnimatePresence>
-              {selectedIds.length > 0 && (
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  onClick={handleBulkStatusUpdate}
-                  className="h-10 px-4 flex items-center gap-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-all shadow-lg shadow-green-200 font-bold text-sm"
-                  title="Bulk Update Status"
-                >
-                  <CheckCircle className="h-4 w-4" />
-                  <span>Update ({selectedIds.length})</span>
-                </motion.button>
-              )}
-            </AnimatePresence>
-            <div className="relative flex-grow md:flex-none">
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="relative flex-1 md:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input 
                 type="text" 
-                placeholder="Search by ID or Name..." 
-                className="input-field pl-10 h-10 text-sm w-full md:w-64"
+                placeholder="Search LR No or Customer..." 
+                className="w-full pl-9 pr-4 h-11 bg-white border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <button className="h-10 w-10 flex items-center justify-center bg-white border border-gray-200 rounded-md text-text-muted hover:text-primary transition-colors shrink-0">
-              <Filter className="h-5 w-5" />
+            <button 
+              onClick={() => setIsFilterModalOpen(true)}
+              className={cn(
+                "h-11 px-4 flex items-center gap-2 bg-white border border-gray-100 rounded-xl transition-all hover:bg-gray-50",
+                (filterVehicleNo || filterRoute) && "border-primary/30 bg-primary/5 text-primary"
+              )}
+            >
+              <Filter className="h-4 w-4 text-text-muted" />
+              <span className="text-sm font-bold">Filters</span>
             </button>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto custom-scrollbar">
-            <table className="w-full text-left min-w-[1000px]">
-            <thead className="bg-gray-50 border-b border-gray-100">
-              <tr>
-                <th className="px-6 py-4 w-10">
-                  <input 
-                    type="checkbox" 
-                    className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
-                    onChange={handleSelectAll}
-                    checked={filteredBookings.length > 0 && selectedIds.length === filteredBookings.length}
-                  />
-                </th>
-                <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Booking ID</th>
-                <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Customer</th>
-                <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Route</th>
-                <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Vehicle No</th>
-                <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Date</th>
-                <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredBookings.map((booking) => {
-                let displayStatus = booking.status;
-                if (booking.status === 'sent') {
-                  if (currentStaffLocation === booking.deliveryLocation) displayStatus = 'incoming';
-                  else displayStatus = 'sent';
-                }
+        {/* Bulk Actions Bar */}
+        <AnimatePresence>
+          {selectedIds.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="px-6 py-3 bg-secondary text-white rounded-2xl flex items-center justify-between shadow-xl shadow-secondary/20 shrink-0"
+            >
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-black text-white/90">{selectedIds.length} Bookings Selected</span>
+                <div className="h-4 w-px bg-white/20" />
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setIsVehicleModalOpen(true)}
+                    className="px-4 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-black transition-colors flex items-center gap-2"
+                  >
+                    <Truck className="h-3.5 w-3.5" /> Assign Vehicle
+                  </button>
+                  <button 
+                    onClick={() => handleBulkStatusChange('shipping')}
+                    className="px-4 py-1.5 bg-primary hover:bg-primary/90 rounded-lg text-xs font-black transition-colors flex items-center gap-2"
+                  >
+                    <ArrowUpCircle className="h-3.5 w-3.5" /> Mark as Shipping
+                  </button>
+                  {activeTab === 'in-place' && (
+                    <button 
+                      onClick={handleGenerateGDM}
+                      className="px-4 py-1.5 bg-green-600 hover:bg-green-700 rounded-lg text-xs font-black transition-colors flex items-center gap-2"
+                    >
+                      <Truck className="h-3.5 w-3.5" /> GDM
+                    </button>
+                  )}
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedIds([])}
+                className="text-xs font-bold text-white/60 hover:text-white flex items-center gap-1"
+              >
+                Clear Selection <X className="h-3 w-3" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-                return (
-                  <tr key={booking.id} className={cn(
-                    "hover:bg-gray-50 transition-colors",
-                    selectedIds.includes(booking.id) && "bg-primary-light/30"
-                  )}>
-                    <td className="px-6 py-4">
-                      <input 
-                        type="checkbox" 
-                        className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
-                        checked={selectedIds.includes(booking.id)}
-                        onChange={() => handleSelectRow(booking.id)}
-                      />
-                    </td>
-                    <td className="px-6 py-4 text-sm font-bold text-secondary">{booking.id}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary-light flex items-center justify-center text-primary text-xs font-bold">
-                          {booking.customerName.charAt(0)}
+        {/* Table Container */}
+        <div className="flex-1 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col min-h-0">
+          <div className="overflow-auto custom-scrollbar flex-1 relative">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-gray-50/80 sticky top-0 z-10 backdrop-blur-md">
+                <tr>
+                  <th className="px-6 py-4 w-12">
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer transition-all"
+                      onChange={handleSelectAll}
+                      checked={filteredBookings.length > 0 && selectedIds.length === filteredBookings.length}
+                    />
+                  </th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">LR Number</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Customer</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Route Info</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Vehicle No</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Finances</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider text-right uppercase tracking-widest">Controls</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {filteredBookings.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="py-24">
+                      <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-500">
+                        <div className="p-4 bg-gray-50 rounded-full">
+                          <LayoutGrid className="h-12 w-12 text-gray-200" />
                         </div>
-                        <span className="text-sm font-medium text-secondary">{booking.customerName}</span>
+                        <div className="text-center">
+                          <p className="text-lg font-display font-medium text-secondary">No Records Found</p>
+                          <p className="text-xs text-text-muted">Adjust your search or filters to see more bookings.</p>
+                        </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold text-secondary">{booking.pickupLocation}</span>
-                        <span className="text-[10px] text-text-muted">to {booking.deliveryLocation}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <SearchableSelect 
-                        value={MOCK_VEHICLES.find(v => v.number === booking.vehicleNo)?.id.toString() || ''}
-                        onSelect={(id) => {
-                          const vehicle = MOCK_VEHICLES.find(v => v.id.toString() === id);
-                          if (vehicle) handleVehicleUpdate(booking.id, vehicle.number);
-                        }}
-                        options={MOCK_VEHICLES.map(v => ({ id: v.id.toString(), label: v.number, sublabel: v.name }))}
-                        placeholder="Select Vehicle"
-                        icon={<Truck className="h-4 w-4" />}
-                        className="w-40"
-                      />
-                    </td>
-                    <td className="px-6 py-4 text-sm text-text-muted">{formatDate(booking.submittedAt)}</td>
-                    <td className="px-6 py-4">
-                      <span className={cn(
-                        "badge", 
-                        displayStatus === 'in-place' && "bg-gray-100 text-gray-600",
-                        displayStatus === 'shipping' && "bg-blue-100 text-blue-700",
-                        displayStatus === 'sent' && "bg-purple-100 text-purple-700",
-                        displayStatus === 'incoming' && "bg-orange-100 text-orange-700",
-                        displayStatus === 'received' && "bg-green-100 text-green-700"
-                      )}>
-                        {displayStatus.replace('-', ' ')}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <ActionMenu 
-                        items={[
-                          {
-                            label: 'View Details',
-                            icon: <Eye className="h-4 w-4" />,
-                            onClick: () => setSelectedBooking(booking)
-                          },
-                          ...(booking.status === 'in-place' || (booking.status === 'sent' && currentStaffLocation === booking.deliveryLocation) ? [
-                            {
-                              label: booking.status === 'in-place' ? 'Mark as Shipping' : 'Mark as Received',
-                              icon: <CheckCircle className="h-4 w-4" />,
-                              onClick: () => handleStatusUpdate(booking.id),
-                              variant: 'success' as const
-                            }
-                          ] : []),
-                          {
-                            label: 'Reject Booking',
-                            icon: <XCircle className="h-4 w-4" />,
-                            onClick: () => toast.error(`Booking ${booking.id} rejected`),
-                            variant: 'danger' as const
-                          }
-                        ]}
-                      />
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                ) : (
+                  filteredBookings.map((booking) => (
+                    <tr key={booking.id} className={cn(
+                      "hover:bg-gray-50/50 transition-colors group",
+                      selectedIds.includes(booking.id) && "bg-primary-light/10 hover:bg-primary-light/20"
+                    )}>
+                      <td className="px-6 py-5">
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer transition-all"
+                          checked={selectedIds.includes(booking.id)}
+                          onChange={() => handleSelectRow(booking.id)}
+                        />
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                          <span className="text-sm font-black text-secondary">{booking.lrNo}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center border border-gray-100 overflow-hidden shrink-0">
+                            <span className="text-sm font-black text-secondary">{booking.customerName.charAt(0)}</span>
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-sm font-bold text-secondary truncate">{booking.customerName}</span>
+                            <span className="text-[10px] text-text-muted font-bold truncate tracking-widest">{booking.customerPhone || '+91 98765 43210'}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] font-black text-secondary italic">{booking.pickupLocation}</span>
+                            <span className="text-gray-300"><ChevronRight className="h-3 w-3" /></span>
+                            <span className="text-[11px] font-black text-primary italic">{booking.deliveryLocation}</span>
+                          </div>
+                          {MOCK_ROUTE_MAPPINGS.find(m => m.vehicleNumber === booking.vehicleNo)?.routePath && MOCK_ROUTE_MAPPINGS.find(m => m.vehicleNumber === booking.vehicleNo)!.routePath.length > 2 && (
+                            <div className="flex items-center gap-1">
+                              <Navigation className="h-2.5 w-2.5 text-primary" />
+                              <span className="text-[8px] font-black text-text-muted uppercase tracking-tighter truncate max-w-[120px]">
+                                Via {MOCK_ROUTE_MAPPINGS.find(m => m.vehicleNumber === booking.vehicleNo)!.routePath.slice(1, -1).join(', ')}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1.5">
+                             <Clock className="h-3 w-3 text-gray-400" />
+                             <span className="text-[10px] text-text-muted font-bold">{formatDate(booking.travelDate)}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        {booking.status !== 'in-place' ? (
+                          <div className={cn(
+                            "px-3 py-1.5 border rounded-lg inline-flex items-center gap-2",
+                            booking.status === 'shipping' ? "bg-gray-100 border-gray-200" : "bg-primary/5 border-primary/20"
+                          )}>
+                            <Truck className={cn("h-3 w-3", booking.status === 'shipping' ? "text-secondary" : "text-primary")} />
+                            <span className={cn("text-[11px] font-black font-mono", booking.status === 'shipping' ? "text-secondary" : "text-primary")}>{booking.vehicleNo || 'UNASSIGNED'}</span>
+                          </div>
+                        ) : (
+                          <button 
+                            onClick={(e) => {
+                               e.stopPropagation();
+                               setSelectedIds([booking.id]);
+                               setIsVehicleModalOpen(true);
+                            }}
+                            className={cn(
+                              "px-3 py-1.5 border rounded-lg text-[10px] font-bold transition-all flex items-center gap-2 group/btn",
+                              booking.vehicleNo 
+                                ? "bg-white border-primary/20 text-primary hover:bg-primary/5" 
+                                : "border-dashed border-gray-200 text-text-muted hover:border-primary/30 hover:bg-primary/5"
+                            )}
+                          >
+                            {booking.vehicleNo ? (
+                              <>
+                                <Truck className="h-3 w-3" /> {booking.vehicleNo} (Change)
+                              </>
+                            ) : (
+                              <>
+                                <Settings2 className="h-3 w-3 group-hover/btn:rotate-45 transition-transform" /> Assign Vehicle
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-black text-secondary">{formatCurrency(booking.totalPrice)}</span>
+                          </div>
+                          <span className={cn(
+                            "text-[9px] font-bold uppercase tracking-tighter px-1.5 py-0.5 rounded w-fit",
+                            booking.paymentStatus === 'paid' ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                          )}>
+                            {booking.paymentStatus.replace('-', ' ')}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <span className={cn(
+                          "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tight flex items-center gap-1.5 w-fit shadow-sm",
+                          booking.status === 'in-place' && "bg-gray-100 text-gray-600 border border-gray-200",
+                          booking.status === 'shipping' && "bg-blue-600 text-white shadow-blue-200",
+                          booking.status === 'sent' && "bg-purple-600 text-white shadow-purple-200",
+                          booking.status === 'incoming' && "bg-orange-600 text-white shadow-orange-200",
+                          booking.status === 'received' && "bg-green-600 text-white shadow-green-200"
+                        )}>
+                          <div className={cn(
+                            "w-1 h-1 rounded-full",
+                            booking.status === 'in-place' ? "bg-gray-400" : "bg-white"
+                          )} />
+                          {booking.status.replace('-', ' ')}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5 text-right">
+                        <ActionMenu 
+                          items={[
+                            {
+                              label: 'View Details',
+                              icon: <Eye className="h-4 w-4" />,
+                              onClick: () => setSelectedBooking(booking)
+                            },
+                            ...(booking.status === 'in-place' ? [
+                              {
+                                label: 'Mark as Shipping',
+                                icon: <ArrowUpCircle className="h-4 w-4" />,
+                                onClick: () => handleStatusUpdate(booking.id, 'shipping'),
+                                variant: 'success' as const
+                              }
+                            ] : []),
+                            ...(booking.status === 'shipping' ? [
+                              {
+                                label: 'Mark as Sent',
+                                icon: <ArrowUpCircle className="h-4 w-4" />,
+                                onClick: () => handleStatusUpdate(booking.id, 'sent'),
+                                variant: 'success' as const
+                              },
+                              {
+                                label: 'Move to In Place',
+                                icon: <ArrowDownCircle className="h-4 w-4" />,
+                                onClick: () => handleStatusUpdate(booking.id, 'in-place')
+                              }
+                            ] : []),
+                            ...(booking.status === 'sent' ? [
+                              {
+                                label: 'Mark as Incoming (Dest)',
+                                icon: <ChevronRight className="h-4 w-4" />,
+                                onClick: () => handleStatusUpdate(booking.id, 'incoming'),
+                                variant: 'success' as const
+                              }
+                            ] : []),
+                            ...(booking.status === 'incoming' ? [
+                              {
+                                label: 'Mark as Received',
+                                icon: <CheckCircle className="h-4 w-4" />,
+                                onClick: () => handleStatusUpdate(booking.id, 'received'),
+                                variant: 'success' as const
+                              }
+                            ] : []),
+                            ...(booking.status === 'received' ? [
+                              {
+                                label: 'Mark as Not Received',
+                                icon: <XCircle className="h-4 w-4" />,
+                                onClick: () => handleStatusUpdate(booking.id, 'incoming')
+                              },
+                              ...(booking.paymentStatus === 'to-pay' ? [{
+                                label: 'Update Payment',
+                                icon: <Banknote className="h-4 w-4" />,
+                                onClick: () => setIsPaymentModalOpen(booking),
+                                variant: 'success' as const
+                              }] : [])
+                            ] : [])
+                          ]}
+                        />
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-    </div>
 
-      {/* Booking Details Modal */}
       <AnimatePresence>
+        {isVehicleModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsVehicleModalOpen(false)} className="absolute inset-0 bg-secondary/40 backdrop-blur-sm" />
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[80vh]">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 shrink-0">
+                <h3 className="font-display font-bold text-secondary">Assign Logistics Vehicle</h3>
+                <button onClick={() => setIsVehicleModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X className="h-5 w-5 text-gray-400" /></button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+                <div className="relative mb-6">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input 
+                    type="text" 
+                    placeholder="Search vehicle or driver..." 
+                    className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm" 
+                    value={vehicleSearch}
+                    onChange={(e) => setVehicleSearch(e.target.value)}
+                  />
+                </div>
+
+                {(() => {
+                  const selectedBookings = bookings.filter(b => selectedIds.includes(b.id));
+                  const currentRoute = selectedBookings.length > 0 
+                    ? `${selectedBookings[0].pickupLocation} → ${selectedBookings[0].deliveryLocation}`
+                    : null;
+                  const allSameRoute = selectedBookings.every(b => `${b.pickupLocation} → ${b.deliveryLocation}` === currentRoute);
+
+                  const filteredMappings = MOCK_ROUTE_MAPPINGS.filter(m => 
+                    m.vehicleNumber.toLowerCase().includes(vehicleSearch.toLowerCase()) || 
+                    m.driverName.toLowerCase().includes(vehicleSearch.toLowerCase()) ||
+                    m.from.toLowerCase().includes(vehicleSearch.toLowerCase()) ||
+                    m.to.toLowerCase().includes(vehicleSearch.toLowerCase())
+                  );
+
+                  const routeMatches = filteredMappings.filter(m => allSameRoute && `${m.from} → ${m.to}` === currentRoute);
+                  const otherMappings = filteredMappings.filter(m => !allSameRoute || `${m.from} → ${m.to}` !== currentRoute);
+
+                  return (
+                    <div className="space-y-6">
+                      {routeMatches.length > 0 && (
+                        <div className="space-y-3">
+                          <p className="text-[10px] font-black text-primary uppercase tracking-widest px-2 flex items-center gap-2">
+                             <CheckCircle className="h-3 w-3" /> Recommended for this Route
+                          </p>
+                          <div className="grid grid-cols-1 gap-2">
+                            {routeMatches.map(mapping => (
+                              <button 
+                                key={mapping.id}
+                                onClick={() => {
+                                   handleBulkVehicleAssign(mapping.vehicleNumber);
+                                   setVehicleSearch('');
+                                }}
+                                className="w-full p-4 border border-primary/20 bg-primary/5 rounded-2xl hover:border-primary/40 text-left transition-all group shrink-0"
+                              >
+                                <div className="flex items-center justify-between mb-3">
+                                   <div className="flex items-center gap-3">
+                                     <div className="p-2 bg-primary text-white rounded-xl shadow-lg shadow-primary/20"><Truck className="h-4 w-4" /></div>
+                                     <span className="font-black text-secondary font-mono tracking-tight text-base">{mapping.vehicleNumber}</span>
+                                   </div>
+                                   <div className="flex flex-col items-end">
+                                     <span className="text-[10px] font-black text-primary uppercase tracking-widest">Active Mapping</span>
+                                     <span className="text-[9px] font-bold text-primary/60 italic uppercase">{mapping.from} → {mapping.to}</span>
+                                   </div>
+                                </div>
+                                <div className="flex items-center gap-4 pt-3 border-t border-primary/10">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center border border-primary/10 shadow-sm">
+                                      <User className="h-3 w-3 text-primary" />
+                                    </div>
+                                    <span className="text-xs font-bold text-secondary">{mapping.driverName}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center border border-primary/10 shadow-sm">
+                                      <Navigation className="h-3 w-3 text-primary" />
+                                    </div>
+                                    <span className="text-[10px] font-black text-text-muted uppercase tracking-tighter">Fastest Path</span>
+                                  </div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {otherMappings.length > 0 && (
+                        <div className="space-y-3">
+                          <p className="text-[10px] font-black text-text-muted uppercase tracking-widest px-2">
+                             {routeMatches.length > 0 ? "Other Available Mappings" : "All Available Mappings"}
+                          </p>
+                          <div className="grid grid-cols-1 gap-2">
+                            {otherMappings.map(mapping => (
+                              <button 
+                                key={mapping.id}
+                                onClick={() => {
+                                   handleBulkVehicleAssign(mapping.vehicleNumber);
+                                   setVehicleSearch('');
+                                }}
+                                className="w-full p-4 border border-gray-100 rounded-2xl hover:border-primary/30 hover:bg-gray-50 text-left transition-all group shrink-0"
+                              >
+                                <div className="flex items-center justify-between mb-3">
+                                   <div className="flex items-center gap-3">
+                                     <div className="p-2 bg-gray-100 text-gray-500 rounded-xl group-hover:bg-primary group-hover:text-white transition-colors"><Truck className="h-4 w-4" /></div>
+                                     <span className="font-black text-secondary font-mono tracking-tight">{mapping.vehicleNumber}</span>
+                                   </div>
+                                   <span className="text-[9px] font-bold text-text-muted uppercase italic tracking-tighter">{mapping.from} → {mapping.to}</span>
+                                </div>
+                                <div className="flex items-center gap-4 pt-3 border-t border-gray-50">
+                                  <div className="flex items-center gap-2">
+                                    <User className="h-3.5 w-3.5 text-gray-400" />
+                                    <span className="text-xs font-bold text-text-muted group-hover:text-secondary transition-colors">{mapping.driverName}</span>
+                                  </div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {filteredMappings.length === 0 && (
+                        <div className="text-center py-12">
+                          <p className="text-sm font-bold text-text-muted italic">No matching route mappings found.</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {isFilterModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsFilterModalOpen(false)} className="absolute inset-0 bg-secondary/40 backdrop-blur-sm" />
+            <motion.div initial={{ x: '100%', opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: '100%', opacity: 0 }} className="absolute right-0 top-0 bottom-0 bg-white w-full max-w-sm shadow-2xl flex flex-col">
+              <div className="p-6 border-b border-gray-100 flex items-center justify-between shrink-0">
+                <h3 className="font-display font-bold text-secondary">Advanced Filters</h3>
+                <button onClick={() => setIsFilterModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X className="h-5 w-5 text-gray-400" /></button>
+              </div>
+              <div className="flex-1 overflow-y-auto overflow-x-hidden p-8 space-y-6 custom-scrollbar">
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
+                    <Truck className="h-3 w-3" /> Logistical Mapping (from Table)
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    <button 
+                      onClick={() => setFilterVehicleNo('')}
+                      className={cn(
+                        "px-4 py-2.5 rounded-xl text-[10px] font-black transition-all border uppercase",
+                        !filterVehicleNo ? "bg-primary text-white border-primary shadow-md" : "bg-gray-50 border-gray-100 text-text-muted hover:bg-gray-100"
+                      )}
+                    >
+                      All Vehicles
+                    </button>
+                    {uniqueTableVehicles.map(v => (
+                      <button 
+                        key={v}
+                        onClick={() => setFilterVehicleNo(v)}
+                        className={cn(
+                          "px-4 py-2.5 rounded-xl text-[10px] font-black transition-all border uppercase",
+                          filterVehicleNo === v ? "bg-primary text-white border-primary shadow-md" : "bg-gray-50 border-gray-100 text-text-muted hover:bg-gray-100"
+                        )}
+                      >
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
+                    <Navigation className="h-3 w-3" /> Route Filter (from Table)
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    <button 
+                      onClick={() => setFilterRoute('')}
+                      className={cn(
+                        "px-4 py-2.5 rounded-xl text-[10px] font-black transition-all border uppercase",
+                        !filterRoute ? "bg-secondary text-white border-secondary shadow-md" : "bg-gray-50 border-gray-100 text-text-muted hover:bg-gray-100"
+                      )}
+                    >
+                      All Routes
+                    </button>
+                    {uniqueTableRoutes.map(r => (
+                      <button 
+                        key={r}
+                        onClick={() => setFilterRoute(r)}
+                        className={cn(
+                          "px-4 py-2.5 rounded-xl text-[10px] font-black transition-all border uppercase whitespace-nowrap",
+                          filterRoute === r ? "bg-secondary text-white border-secondary shadow-md" : "bg-gray-50 border-gray-100 text-text-muted hover:bg-gray-100"
+                        )}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="p-6 border-t border-gray-100 flex gap-4">
+                <button onClick={() => { setFilterVehicleNo(''); setFilterRoute(''); setIsFilterModalOpen(false); }} className="flex-1 py-3 text-sm font-bold text-text-muted hover:text-secondary transition-colors">Reset</button>
+                <button onClick={() => setIsFilterModalOpen(false)} className="flex-1 btn-primary py-3">Apply Filters</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {isPaymentModalOpen && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsPaymentModalOpen(null)} className="absolute inset-0 bg-secondary/40 backdrop-blur-sm" />
+             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-white w-full max-w-md rounded-2xl shadow-2xl p-8 flex flex-col gap-6">
+                <div className="text-center space-y-2">
+                   <div className="w-16 h-16 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-100"><Banknote className="h-8 w-8" /></div>
+                   <h3 className="text-xl font-display font-bold text-secondary">Complete Payment</h3>
+                   <p className="text-sm text-text-muted">LR No: <span className="font-bold text-secondary">{isPaymentModalOpen.lrNo}</span></p>
+                </div>
+                
+                <div className="space-y-4">
+                  <p className="text-xs font-bold text-text-muted uppercase text-center">Select Payment Mode</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button 
+                      onClick={() => setSelectedPaymentMode('Online')}
+                      className={cn(
+                        "flex flex-col items-center gap-3 p-4 border rounded-2xl transition-all font-bold text-sm relative",
+                        selectedPaymentMode === 'Online' 
+                          ? "border-primary bg-primary/5 text-secondary shadow-sm" 
+                          : "border-gray-100 bg-white text-text-muted hover:border-gray-200"
+                      )}
+                    >
+                      {selectedPaymentMode === 'Online' && <Check className="h-4 w-4 absolute top-3 right-3 text-primary" />}
+                      <CreditCard className={cn("h-6 w-6", selectedPaymentMode === 'Online' ? "text-primary" : "text-gray-400")} /> Online/UPI
+                    </button>
+                    <button 
+                      onClick={() => setSelectedPaymentMode('Cash')}
+                      className={cn(
+                        "flex flex-col items-center gap-3 p-4 border rounded-2xl transition-all font-bold text-sm relative",
+                        selectedPaymentMode === 'Cash' 
+                          ? "border-primary bg-primary/5 text-secondary shadow-sm" 
+                          : "border-gray-100 bg-white text-text-muted hover:border-gray-200"
+                      )}
+                    >
+                      {selectedPaymentMode === 'Cash' && <Check className="h-4 w-4 absolute top-3 right-3 text-primary" />}
+                      <Wallet className={cn("h-6 w-6", selectedPaymentMode === 'Cash' ? "text-primary" : "text-gray-400")} /> Cash Point
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex gap-4 mt-2">
+                  <button onClick={() => setIsPaymentModalOpen(null)} className="flex-1 py-3 text-sm font-bold text-text-muted hover:text-secondary transition-colors">Cancel</button>
+                  <button onClick={() => handlePaymentUpdate(isPaymentModalOpen.id)} className="flex-1 btn-primary py-3">Confirm Paid</button>
+                </div>
+             </motion.div>
+          </div>
+        )}
+
         {selectedBooking && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
-            >
-              {/* Modal Header */}
-              <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                <div className="flex items-center gap-4">
-                  <div className="bg-primary-light p-3 rounded-lg">
-                    <Info className="h-6 w-6 text-primary" />
-                  </div>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedBooking(null)} className="absolute inset-0 bg-secondary/60 backdrop-blur-md" />
+            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative bg-white w-full max-w-4xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+              {/* Modern Header */}
+              <div className="bg-secondary p-8 text-white flex justify-between items-start shrink-0 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                <div className="relative z-10 flex items-center gap-6">
+                  <div className="w-16 h-16 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/20"><Truck className="h-8 w-8 text-primary" /></div>
                   <div>
-                    <h2 className="text-xl font-display font-bold text-secondary">Booking Details</h2>
-                    <p className="text-xs text-text-muted font-mono">{selectedBooking.id}</p>
+                    <div className="flex items-center gap-3 mb-1">
+                      <h2 className="text-2xl font-black">{selectedBooking.lrNo}</h2>
+                      <div className="flex flex-col gap-0.5">
+                        <span className={cn(
+                          "text-[10px] px-2 py-0.5 rounded font-black uppercase text-center",
+                          selectedBooking.paymentStatus === 'paid' ? "bg-green-500/20 text-green-300" : "bg-red-500/20 text-red-300"
+                        )}>{selectedBooking.paymentStatus}</span>
+                        {selectedBooking.paymentMode && (
+                          <span className="text-[8px] font-black uppercase text-white/40 text-center tracking-tighter italic">via {selectedBooking.paymentMode}</span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-white/60 text-xs font-bold uppercase tracking-widest">{selectedBooking.status} STATUS</p>
                   </div>
                 </div>
-                <button 
-                  onClick={() => setSelectedBooking(null)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <X className="h-6 w-6 text-text-muted" />
-                </button>
+                <button onClick={() => setSelectedBooking(null)} className="relative z-10 p-2 hover:bg-white/10 rounded-full transition-colors"><X className="h-6 w-6" /></button>
               </div>
 
-              {/* Modal Content */}
-              <div className="flex-grow overflow-y-auto p-8 space-y-8">
-                {/* Status & Transport */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="bg-gray-50 p-6 rounded-lg space-y-4">
-                    <h4 className="text-xs font-bold text-text-muted uppercase tracking-widest">Transport & Status</h4>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-lg font-bold text-secondary">{selectedBooking.packageName}</p>
-                        <p className="text-sm text-text-muted">{selectedBooking.pickupLocation} to {selectedBooking.deliveryLocation}</p>
-                      </div>
-                      <span className={cn(
-                        "badge", 
-                        (selectedBooking.status === 'sent' && currentStaffLocation === selectedBooking.deliveryLocation ? 'incoming' : selectedBooking.status) === 'in-place' && "bg-gray-100 text-gray-600",
-                        (selectedBooking.status === 'sent' && currentStaffLocation === selectedBooking.deliveryLocation ? 'incoming' : selectedBooking.status) === 'shipping' && "bg-blue-100 text-blue-700",
-                        (selectedBooking.status === 'sent' && currentStaffLocation === selectedBooking.deliveryLocation ? 'incoming' : selectedBooking.status) === 'sent' && "bg-purple-100 text-purple-700",
-                        (selectedBooking.status === 'sent' && currentStaffLocation === selectedBooking.deliveryLocation ? 'incoming' : selectedBooking.status) === 'incoming' && "bg-orange-100 text-orange-700",
-                        (selectedBooking.status === 'sent' && currentStaffLocation === selectedBooking.deliveryLocation ? 'incoming' : selectedBooking.status) === 'received' && "bg-green-100 text-green-700"
-                      )}>
-                        {(selectedBooking.status === 'sent' && currentStaffLocation === selectedBooking.deliveryLocation ? 'incoming' : selectedBooking.status).replace('-', ' ')}
-                      </span>
+              {/* Dynamic Content */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Left Main */}
+                  <div className="lg:col-span-2 space-y-8">
+                    {/* Route Section */}
+                    <div className="space-y-4">
+                       <h3 className="text-xs font-black text-text-muted uppercase tracking-widest underline decoration-primary decoration-4 underline-offset-8">Logistic Path Flow</h3>
+                       <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100 flex items-center justify-between relative">
+                          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-0.5 w-[60%] bg-dashed-border opacity-20" />
+                          <div className="flex flex-col items-center gap-3 relative z-10">
+                             <div className="w-12 h-12 bg-white rounded-2xl shadow-xl flex items-center justify-center text-primary border border-gray-100"><MapPin className="h-6 w-6" /></div>
+                             <div className="text-center">
+                               <p className="text-[10px] font-black text-text-muted uppercase">Starting</p>
+                               <p className="text-sm font-black text-secondary">{selectedBooking.pickupLocation}</p>
+                             </div>
+                          </div>
+
+                          <div className="flex flex-col items-center gap-3 relative z-10">
+                              <div className="px-4 py-2 bg-primary text-white rounded-full text-[10px] font-black shadow-lg shadow-primary/20">{selectedBooking.vehicleNo || 'AWAITING VEHICLE'}</div>
+                          </div>
+
+                          <div className="flex flex-col items-center gap-3 relative z-10">
+                             <div className="w-12 h-12 bg-white rounded-2xl shadow-xl flex items-center justify-center text-primary border border-gray-100"><Navigation className="h-6 w-6" /></div>
+                             <div className="text-center">
+                               <p className="text-[10px] font-black text-text-muted uppercase">Destination</p>
+                               <p className="text-sm font-black text-secondary">{selectedBooking.deliveryLocation}</p>
+                             </div>
+                          </div>
+                       </div>
                     </div>
-                    <div className="pt-4 border-t border-gray-200 flex justify-between text-sm">
-                      <span className="text-text-muted">Total Price:</span>
-                      <span className="font-bold text-primary">{formatCurrency(selectedBooking.totalPrice)}</span>
+
+                    {/* Basic Grid */}
+                    <div className="grid grid-cols-2 gap-6">
+                       <div className="p-6 bg-white border border-gray-100 rounded-3xl shadow-sm space-y-3">
+                          <p className="text-[10px] font-black text-text-muted uppercase">Customer Interface</p>
+                          <div className="flex items-center gap-4">
+                             <div className="w-12 h-12 bg-primary/5 text-primary rounded-2xl flex items-center justify-center"><User className="h-6 w-6" /></div>
+                             <div>
+                                <p className="text-sm font-black text-secondary">{selectedBooking.customerName}</p>
+                                <p className="text-xs text-text-muted font-bold truncate max-w-[150px]">{selectedBooking.customerEmail}</p>
+                             </div>
+                          </div>
+                       </div>
+                       <div className="p-6 bg-white border border-gray-100 rounded-3xl shadow-sm space-y-3">
+                          <p className="text-[10px] font-black text-text-muted uppercase">Trip Schedule</p>
+                          <div className="flex items-center gap-4">
+                             <div className="w-12 h-12 bg-secondary/5 text-secondary rounded-2xl flex items-center justify-center"><Calendar className="h-6 w-6" /></div>
+                             <div>
+                                <p className="text-sm font-black text-secondary">{formatDate(selectedBooking.travelDate)}</p>
+                                <p className="text-xs text-text-muted font-bold">Planned Arrival: T+1 Day</p>
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+                    
+                    <div className="p-8 bg-gray-900 text-white rounded-[2rem] shadow-2xl relative overflow-hidden group">
+                       <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity"><Truck className="h-32 w-32 rotate-12" /></div>
+                       <h3 className="text-xs font-black text-white/50 uppercase tracking-widest mb-6 border-b border-white/10 pb-4">Consignment Info</h3>
+                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                          <div>
+                             <p className="text-[10px] font-black text-white/40 uppercase mb-2">Weight</p>
+                             <p className="text-xl font-black">{selectedBooking.weightKg} <span className="text-[10px] text-white/60">KG</span></p>
+                          </div>
+                          <div>
+                             <p className="text-[10px] font-black text-white/40 uppercase mb-2">Freight Value</p>
+                             <p className="text-xl font-black text-primary">{formatCurrency(selectedBooking.totalPrice)}</p>
+                          </div>
+                          <div>
+                             <p className="text-[10px] font-black text-white/40 uppercase mb-2">Fragile</p>
+                             <p className="text-sm font-black flex items-center gap-2">{selectedBooking.isFragile ? <ShieldCheck className="h-4 w-4 text-primary" /> : <X className="h-4 w-4 text-white/20" />} {selectedBooking.isFragile ? 'YES' : 'NO'}</p>
+                          </div>
+                          <div>
+                             <p className="text-[10px] font-black text-white/40 uppercase mb-2">Type</p>
+                             <p className="text-sm font-black uppercase text-primary tracking-tighter">{selectedBooking.packageName}</p>
+                          </div>
+                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-gray-50 p-6 rounded-lg space-y-4">
-                    <h4 className="text-xs font-bold text-text-muted uppercase tracking-widest">Travel Schedule</h4>
-                    <div className="flex items-center gap-3">
-                      <Calendar className="h-5 w-5 text-primary" />
-                      <div>
-                        <p className="text-sm font-bold text-secondary">{formatDate(selectedBooking.travelDate)}</p>
-                        <p className="text-xs text-text-muted">Start Date</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Users className="h-5 w-5 text-primary" />
-                      <div>
-                        <p className="text-sm font-bold text-secondary">{selectedBooking.totalMembers} Members</p>
-                        <p className="text-xs text-text-muted">{selectedBooking.totalMales} Males, {selectedBooking.totalFemales} Females</p>
-                      </div>
-                    </div>
+                  {/* Right Sidebar */}
+                  <div className="space-y-6">
+                     <div className="p-6 bg-gray-50 border border-gray-100 rounded-3xl space-y-6">
+                        <h4 className="text-[10px] font-black text-text-muted uppercase tracking-widest">Address Ledger</h4>
+                        <div className="space-y-6">
+                           <div className="flex gap-4">
+                              <div className="w-1 h-full bg-green-500 rounded-full" />
+                              <div>
+                                 <p className="text-[9px] font-black text-green-600 uppercase mb-1">Pick up Point</p>
+                                 <p className="text-[11px] font-bold text-secondary leading-relaxed">{selectedBooking.pickupAddress || 'Verified Branch Location'}</p>
+                              </div>
+                           </div>
+                           <div className="flex gap-4">
+                              <div className="w-1 h-full bg-red-500 rounded-full" />
+                              <div>
+                                 <p className="text-[9px] font-black text-red-600 uppercase mb-1">Final Drop Off</p>
+                                 <p className="text-[11px] font-bold text-secondary leading-relaxed">{selectedBooking.dropAddress || 'Customer Destination Address'}</p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                     
+                     <div className="p-6 border border-gray-100 rounded-3xl space-y-4">
+                        <p className="text-[9px] font-black text-text-muted uppercase text-center border-b border-gray-50 pb-3">Quick Logistics Actions</p>
+                        <div className="space-y-2">
+                           <button onClick={() => setSelectedBooking(null)} className="w-full h-11 bg-gray-100 text-secondary text-xs font-black rounded-xl hover:bg-gray-200 transition-all flex items-center justify-center gap-2 italic">DOWNLOAD LR RECEIPT</button>
+                           {selectedBooking.status === 'in-place' && (
+                             <button onClick={() => { handleStatusUpdate(selectedBooking.id, 'shipping'); setSelectedBooking(null); }} className="w-full h-11 bg-primary text-white text-xs font-black rounded-xl hover:scale-105 transition-all shadow-xl shadow-primary/20 italic">DISPATCH SHIPMENT</button>
+                           )}
+                           {selectedBooking.status === 'incoming' && (
+                             <button onClick={() => { handleStatusUpdate(selectedBooking.id, 'received'); setSelectedBooking(null); }} className="w-full h-11 bg-green-600 text-white text-xs font-black rounded-xl hover:scale-105 transition-all shadow-xl shadow-green-200 italic">VERIFY & RECEIVE</button>
+                           )}
+                        </div>
+                     </div>
                   </div>
                 </div>
-
-                {/* Customer Details */}
-                <div className="space-y-4">
-                  <h4 className="text-xs font-bold text-text-muted uppercase tracking-widest flex items-center gap-2">
-                    <User className="h-4 w-4" /> Customer Information
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white border border-gray-100 p-6 rounded-lg">
-                    <div>
-                      <p className="text-xs text-text-muted mb-1">Name</p>
-                      <p className="text-sm font-bold text-secondary">{selectedBooking.customerName}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-text-muted mb-1">Gender / Age</p>
-                      <p className="text-sm font-bold text-secondary">{selectedBooking.gender} / {selectedBooking.age} Years</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-text-muted mb-1">Email</p>
-                      <p className="text-sm font-bold text-secondary">{selectedBooking.customerEmail}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-text-muted mb-1">WhatsApp (Phone 1)</p>
-                      <p className="text-sm font-bold text-secondary flex items-center gap-2">
-                        <Phone className="h-3 w-3" /> {selectedBooking.phone1}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-text-muted mb-1">Secondary (Phone 2)</p>
-                      <p className="text-sm font-bold text-secondary flex items-center gap-2">
-                        <Phone className="h-3 w-3" /> {selectedBooking.phone2 || 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Route Details */}
-                <div className="space-y-4">
-                  <h4 className="text-xs font-bold text-text-muted uppercase tracking-widest flex items-center gap-2">
-                    <MapPin className="h-4 w-4" /> Route Details
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-green-50/50 p-6 rounded-lg border border-green-100">
-                      <p className="text-[10px] uppercase font-bold text-green-600 mb-2">Pick up Address</p>
-                      <p className="text-sm text-secondary leading-relaxed">{selectedBooking.pickupAddress}</p>
-                    </div>
-                    <div className="bg-red-50/50 p-6 rounded-lg border border-red-100">
-                      <p className="text-[10px] uppercase font-bold text-red-600 mb-2">Drop Address</p>
-                      <p className="text-sm text-secondary leading-relaxed">{selectedBooking.dropAddress}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Payment Deadlines */}
-                <div className="space-y-4">
-                  <h4 className="text-xs font-bold text-text-muted uppercase tracking-widest flex items-center gap-2">
-                    <CreditCard className="h-4 w-4" /> Payment Deadlines
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-4 rounded-lg border border-gray-100 bg-white">
-                      <p className="text-[10px] uppercase font-bold text-text-muted mb-1">Pre Payment</p>
-                      <p className="text-sm font-bold text-secondary">{selectedBooking.prePaymentDeadline ? formatDate(selectedBooking.prePaymentDeadline) : 'Not Set'}</p>
-                    </div>
-                    <div className="p-4 rounded-lg border border-gray-100 bg-white">
-                      <p className="text-[10px] uppercase font-bold text-text-muted mb-1">Post Payment</p>
-                      <p className="text-sm font-bold text-secondary">{selectedBooking.postPaymentDeadline ? formatDate(selectedBooking.postPaymentDeadline) : 'Not Set'}</p>
-                    </div>
-                    <div className="p-4 rounded-lg border border-gray-100 bg-white">
-                      <p className="text-[10px] uppercase font-bold text-text-muted mb-1">Half Payment</p>
-                      <p className="text-sm font-bold text-secondary">{selectedBooking.halfPaymentDeadline ? formatDate(selectedBooking.halfPaymentDeadline) : 'Not Set'}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Modal Footer */}
-              <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3">
-                <button 
-                  onClick={() => setSelectedBooking(null)}
-                  className="px-6 py-2.5 rounded-md font-bold text-text-muted hover:bg-gray-100 transition-colors"
-                >
-                  Close
-                </button>
-                {(selectedBooking.status === 'in-place' || (selectedBooking.status === 'sent' && currentStaffLocation === selectedBooking.deliveryLocation)) && (
-                  <button 
-                    onClick={() => {
-                      handleStatusUpdate(selectedBooking.id);
-                      setSelectedBooking(null);
-                    }}
-                    className="btn-primary px-8"
-                  >
-                    {selectedBooking.status === 'in-place' ? 'Mark as Shipping' : 
-                     'Mark as Received'}
-                  </button>
-                )}
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
-      <Toaster position="top-right" richColors />
+
+      <Toaster position="bottom-right" richColors />
+      <style>{`
+        .bg-dashed-border {
+          background-image: linear-gradient(to right, #d1d5db 50%, transparent 50%);
+          background-size: 8px 2px;
+          background-repeat: repeat-x;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #f1f1f1; border-radius: 10px; }
+      `}</style>
     </PortalLayout>
   );
 }

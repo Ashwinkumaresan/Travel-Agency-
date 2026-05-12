@@ -24,6 +24,7 @@ import BookCourier from './pages/staff/BookCourier';
 import DailyReport from './pages/staff/DailyReport';
 import Accounts from './pages/staff/Accounts';
 import RouteMapping from './pages/staff/RouteMapping';
+import GDMManagement from './pages/staff/GDMManagement';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminAccounts from './pages/admin/AccountsOverview';
 import AdminReports from './pages/admin/Reports';
@@ -101,6 +102,7 @@ export default function App() {
               <Route path="/staff/customers" element={<ManageCustomers />} />
               <Route path="/staff/accounts" element={<Accounts />} />
               <Route path="/staff/mapping" element={<RouteMapping />} />
+              <Route path="/staff/gdm" element={<GDMManagement />} />
               
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/metrics" element={<DetailedMetrics />} />

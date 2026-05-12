@@ -31,6 +31,8 @@ export interface RouteMapping {
   driverName: string;
   vehicleId: number;
   vehicleNumber: string;
+  routePath: string[]; // Array of stops including start and end
+  stopsCount?: number;
 }
 
 export type BookingStatus = 'in-place' | 'shipping' | 'sent' | 'incoming' | 'received' | 'pending' | 'confirmed' | 'due' | 'completed' | 'cancelled';
@@ -48,12 +50,17 @@ export interface Booking {
   totalPrice: number;
   status: BookingStatus;
   paymentMode: PaymentMode;
-  paymentStatus: 'pending' | 'partial' | 'paid';
+  paymentStatus: 'to-pay' | 'paid';
   paymentDeadline?: string;
   customerName: string;
   customerEmail: string;
   submittedAt: string;
   assignedStaffId?: string;
+  lrNo?: string;
+  gdmId?: string; // Link to GDM
+  weightKg?: number;
+  isFragile?: boolean;
+  vehicleNo?: string;
   
   // New fields for transport booking
   gender?: string;
@@ -70,14 +77,29 @@ export interface Booking {
   halfPaymentDeadline?: string;
   
   // Courier Booking Fields
-  isFragile?: boolean;
   productDescription?: string;
-  weightKg?: number;
   ratePerKg?: number;
   pickupLocation?: string;
   deliveryLocation?: string;
-  vehicleNo?: string;
   completedAt?: string; // Timestamp for report
+}
+
+export interface GDM {
+  id: string;
+  gdmNo: string;
+  vehicleNo: string;
+  driverName: string;
+  driverPhone: string;
+  route: string;
+  totalLRCount: number;
+  totalPackages: number;
+  totalWeight: number;
+  totalFreight: number;
+  paidCount: number;
+  toPayCount: number;
+  dispatchDate: string;
+  status: 'draft' | 'generated' | 'dispatched';
+  lrIds: string[];
 }
 
 export interface DailyLog {

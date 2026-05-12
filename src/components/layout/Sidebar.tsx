@@ -39,6 +39,7 @@ const NAV_ITEMS = {
   staff: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/staff/dashboard' },
     { label: 'Book Courier', icon: Package, path: '/staff/book' },
+    { label: 'GDM', icon: FileText, path: '/staff/gdm' },
     { label: 'Route Mapping', icon: Truck, path: '/staff/mapping' },
     { label: 'Daily Report', icon: FileText, path: '/staff/report' },
     { label: 'Manage Bookings', icon: Briefcase, path: '/staff/bookings' },
