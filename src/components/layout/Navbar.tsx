@@ -8,9 +8,9 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
+    <nav className="w-full bg-white/50 backdrop-blur-md border-b border-gray-100 fixed top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
+        <div className="flex justify-between items-center h-15">
           
           {/* Brand Identity (Left aligned) */}
           <div className="flex items-center">
@@ -23,12 +23,12 @@ export default function Navbar() {
               }}
             >
               <Link to="/" className="flex items-center gap-2 md:gap-3 group">
-                <div className="bg-primary p-2 rounded-lg md:rounded-xl shadow-md shadow-primary/10">
+                {/* <div className="bg-primary p-2 rounded-lg md:rounded-xl shadow-md shadow-primary/10">
                   <Compass className="h-6 w-6 text-white" />
-                </div>
-                <span className="text-xl md:text-2xl font-display font-bold whitespace-nowrap">
-                  <span className="text-secondary">Mettur</span>
-                  <span className="text-primary italic px-0.5">Transports</span>
+                </div> */}
+                <span className="text-xl md:text-2xl font-display font-semibold whitespace-nowrap">
+                  <span className="text-secondary">Sa Salem Super </span>
+                  <span className="text-primary font-[Dancing_Script] px-0.5">Service</span>
                 </span>
               </Link>
             </motion.div>

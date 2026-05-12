@@ -1,7 +1,6 @@
 import PortalLayout from '@/components/layout/PortalLayout';
-import { COURIER_LOCATIONS } from '@/constants';
 import { cn, formatCurrency } from '@/lib/utils';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   MapPin,
@@ -30,11 +29,14 @@ interface PackageRow {
 }
 
 export default function BookCourier() {
-  const staffBranch = 'Chennai Branch';
+  const staffBranch = localStorage.getItem('branch');
 
   // States
+  const [locations, setLocations] = useState<{ id: number, name: string }[]>([]);
+
   const [routeInfo, setRouteInfo] = useState({
     toBranch: '',
+    toBranchId: '',
     fromName: '',
     fromAddress: '',
     fromPhone: '',
@@ -43,6 +45,27 @@ export default function BookCourier() {
     toPhone: '',
     deliveryType: 'Godown' as 'Godown' | 'Door'
   });
+
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+        const token = localStorage.getItem('accessToken');
+        const response = await fetch(`${apiUrl}locations/other/`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setLocations(data);
+        }
+      } catch (error) {
+        console.error('Error fetching locations:', error);
+      }
+    };
+    fetchLocations();
+  }, []);
 
   const [packages, setPackages] = useState<PackageRow[]>([
     { id: Date.now(), nature: '', count: 1 }
@@ -69,13 +92,9 @@ export default function BookCourier() {
   const [branchSearch, setBranchSearch] = useState('');
 
   // Derived
-  const otherBranches = useMemo(() =>
-    COURIER_LOCATIONS.filter((l: string) => l !== 'Chennai' && l !== 'All')
-    , []);
-
   const filteredBranches = useMemo(() =>
-    otherBranches.filter(b => b.toLowerCase().includes(branchSearch.toLowerCase()))
-    , [otherBranches, branchSearch]);
+    locations.filter(b => b.name.toLowerCase().includes(branchSearch.toLowerCase()))
+    , [locations, branchSearch]);
 
   const totalPackages = useMemo(() =>
     packages.reduce((sum, p) => sum + (Number(p.count) || 0), 0)
@@ -106,35 +125,97 @@ export default function BookCourier() {
     setFees({ ...fees, [field]: num });
   };
 
-  const handleConfirm = () => {
-    alert('Booking Confirmed Successfully!');
-    // Reset all fields instead of navigating
-    setRouteInfo({
-      toBranch: '',
-      fromName: '',
-      fromAddress: '',
-      fromPhone: '',
-      toName: '',
-      toAddress: '',
-      toPhone: '',
-      deliveryType: 'Godown'
-    });
-    setPackages([{ id: Date.now(), nature: '', count: 1 }]);
-    setPaymentInfo({
-      weight: 1,
-      status: 'Paid',
-      paymentMode: 'Cash',
-      invoiceNumber: ''
-    });
-    setFees({
-      freight: 0,
-      loadingUnloading: 0,
-      doorPickup: 0,
-      ddCharges: 0,
-      otherTransport: 0,
-      mamool: 0,
-      statCharges: 10
-    });
+  const handleConfirm = async () => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const token = localStorage.getItem('accessToken');
+
+      // Transform packages to list of lists
+      const parcelInformation = packages.map(p => [p.nature, Number(p.count)]);
+
+      // Map fields to serializer expectations
+      const payload = {
+        to_location: parseInt(routeInfo.toBranchId),
+        sender_name: routeInfo.fromName,
+        receiver_name: routeInfo.toName,
+        from_address: routeInfo.fromAddress,
+        to_address: routeInfo.toAddress,
+        sender_phone_num: routeInfo.fromPhone,
+        receiver_phone_num: routeInfo.toPhone,
+        parcel_information: parcelInformation,
+        weight: paymentInfo.weight,
+        freight: fees.freight,
+        loading_unloading: fees.loadingUnloading,
+        door_pickup: fees.doorPickup,
+        other_transport_crossing: fees.otherTransport,
+        mamool: fees.mamool,
+        statistical_charges: fees.statCharges,
+        door_delivery: fees.ddCharges,
+        delivery_type: routeInfo.deliveryType === 'Godown' ? 'GoodDown Delivery' : 'Door Delivery',
+        payment_status: paymentInfo.status,
+        payment_mode: paymentInfo.paymentMode,
+        invoice_number: paymentInfo.invoiceNumber || `INV-${Date.now()}`
+      };
+
+      const response = await fetch(`${apiUrl}couriers/create/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        // Handle PDF response
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `courier_${payload.invoice_number}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        alert('Booking Confirmed and PDF Downloaded Successfully!');
+
+        // Reset all fields
+        setRouteInfo({
+          toBranch: '',
+          toBranchId: '',
+          fromName: '',
+          fromAddress: '',
+          fromPhone: '',
+          toName: '',
+          toAddress: '',
+          toPhone: '',
+          deliveryType: 'Godown'
+        });
+        setPackages([{ id: Date.now(), nature: '', count: 1 }]);
+        setPaymentInfo({
+          weight: 1,
+          status: 'Paid',
+          paymentMode: 'Cash',
+          invoiceNumber: ''
+        });
+        setFees({
+          freight: 0,
+          loadingUnloading: 0,
+          doorPickup: 0,
+          ddCharges: 0,
+          otherTransport: 0,
+          mamool: 0,
+          statCharges: 10
+        });
+      } else {
+        const errorData = await response.json();
+        alert(`Error: ${JSON.stringify(errorData)}`);
+      }
+    } catch (error) {
+      console.error('Error creating courier:', error);
+      alert('An error occurred during booking');
+    }
   };
 
   return (
@@ -199,16 +280,16 @@ export default function BookCourier() {
                           <div className="max-h-48 overflow-y-auto">
                             {filteredBranches.map(branch => (
                               <div
-                                key={branch}
+                                key={branch.id}
                                 onClick={() => {
-                                  setRouteInfo({ ...routeInfo, toBranch: branch });
+                                  setRouteInfo({ ...routeInfo, toBranch: branch.name, toBranchId: branch.id.toString() });
                                   setIsBranchSearchOpen(false);
                                   setBranchSearch('');
                                 }}
                                 className="px-4 py-2 text-xs font-medium hover:bg-primary/5 cursor-pointer flex items-center justify-between transition-colors"
                               >
-                                {branch}
-                                {routeInfo.toBranch === branch && <CheckCircle2 className="h-3 w-3 text-primary" />}
+                                {branch.name}
+                                {routeInfo.toBranchId === branch.id.toString() && <CheckCircle2 className="h-3 w-3 text-primary" />}
                               </div>
                             ))}
                             {filteredBranches.length === 0 && (

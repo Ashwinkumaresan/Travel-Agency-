@@ -41,7 +41,7 @@ export default function WhoWeAre() {
             
             <h3 className="text-3xl md:text-4xl font-display font-bold text-secondary leading-tight">
               A Legacy of Reliable Logistics <br /> 
-              <span className="text-primary italic">Since 1993.</span>
+              <span className="text-primary italic">Since 2000.</span>
             </h3>
 
             <p className="text-lg text-text-main font-semibold leading-relaxed">

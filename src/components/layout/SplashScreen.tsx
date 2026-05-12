@@ -10,7 +10,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ isTransitioning }) => {
   const [showLogo, setShowLogo] = useState(false);
   const [showText, setShowText] = useState(false);
   
-  const companyName = "Mettur Transports";
+  const companyName = "Sa Salem Super Service";
 
   useEffect(() => {
     // Stage 1: Logo Entry (0s)

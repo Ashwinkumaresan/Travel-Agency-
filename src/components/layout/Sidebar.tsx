@@ -174,6 +174,7 @@ export default function Sidebar({ role, isOpen, setIsOpen, isCollapsed, setIsCol
               "flex items-center gap-3 px-4 py-3 rounded-md text-red-500 hover:bg-red-50 transition-all group",
               isCollapsed ? "justify-center" : ""
             )}
+            onClick={() => localStorage.clear()}
           >
             <LogOut className="h-5 w-5 shrink-0 group-hover:translate-x-1 transition-transform" />
             {!isCollapsed && <span className="text-sidebar-menu font-medium">Logout</span>}

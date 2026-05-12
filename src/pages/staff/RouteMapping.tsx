@@ -1,5 +1,5 @@
 import PortalLayout from '@/components/layout/PortalLayout';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   MapPin, 
   User as UserIcon, 
@@ -35,14 +35,15 @@ interface RouteStopsModalProps {
   to: string;
   selectedStops: string[];
   onChange: (stops: string[]) => void;
+  locations: any[];
 }
 
-function RouteStopsModal({ isOpen, onClose, from, to, selectedStops, onChange }: RouteStopsModalProps) {
+function RouteStopsModal({ isOpen, onClose, from, to, selectedStops, onChange, locations }: RouteStopsModalProps) {
   const [searchTerm, setSearchTerm] = useState('');
   
   const availableStops = useMemo(() => {
-    return COURIER_LOCATIONS.filter(loc => loc !== from && loc !== to);
-  }, [from, to]);
+    return locations.map(l => l.name).filter(name => name !== from && name !== to);
+  }, [locations, from, to]);
 
   const filteredStops = useMemo(() => {
     return availableStops.filter(loc => 
@@ -203,7 +204,12 @@ export default function RouteMappingPage() {
     id: 'STF-001'
   };
 
-  const [mappings, setMappings] = useState<RouteMapping[]>(MOCK_ROUTE_MAPPINGS.filter(m => m.from === staffInfo.location));
+  const [mappings, setMappings] = useState<any[]>([]);
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [locations, setLocations] = useState<any[]>([]);
+
+
 
   const [toLocation, setToLocation] = useState('');
   const [selectedStops, setSelectedStops] = useState<string[]>([]);
@@ -213,6 +219,45 @@ export default function RouteMappingPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [staffLocationId, setStaffLocationId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+        const token = localStorage.getItem('accessToken');
+        
+        const headers = { 'Authorization': `Bearer ${token}` };
+
+        // Fetch Locations
+        const locRes = await fetch(`${apiUrl}locations/other/`, { headers });
+        if (locRes.ok) setLocations(await locRes.json());
+
+        // Fetch Drivers
+        const drvRes = await fetch(`${apiUrl}drivers/`, { headers });
+        if (drvRes.ok) setDrivers(await drvRes.json());
+
+        // Fetch Vehicles
+        const vehRes = await fetch(`${apiUrl}vehicles/`, { headers });
+        if (vehRes.ok) setVehicles(await vehRes.json());
+
+        // Fetch Routes
+        const routeRes = await fetch(`${apiUrl}routes/`, { headers });
+        if (routeRes.ok) {
+          const data = await routeRes.json();
+          console.log(data);
+          setMappings(data);
+          if (data.length > 0) {
+            setStaffLocationId(data[0].from_location);
+          }
+        }
+        
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+    fetchData();
+  }, []);
   
   // Edit state
   const [editTo, setEditTo] = useState('');
@@ -220,13 +265,13 @@ export default function RouteMappingPage() {
   const [editDriverId, setEditDriverId] = useState<string>('');
   const [editVehicleId, setEditVehicleId] = useState<string>('');
 
-  const otherLocations = COURIER_LOCATIONS.filter(loc => loc !== staffInfo.location);
+  const otherLocations = locations.map(l => l.name);
 
   const fullRoutePath = useMemo(() => {
     return [staffInfo.location, ...selectedStops, toLocation].filter(Boolean);
   }, [selectedStops, toLocation]);
 
-  const handleAddRoute = (e: React.FormEvent) => {
+  const handleAddRoute = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -243,34 +288,80 @@ export default function RouteMappingPage() {
       return;
     }
 
-    const driver = MOCK_DRIVERS.find(d => d.id === parseInt(selectedDriverId));
-    const vehicle = MOCK_VEHICLES.find(v => v.id === parseInt(selectedVehicleId));
+    const toLocObj = locations.find(l => l.name === toLocation);
+    if (!toLocObj) {
+      setError('Destination location not found in list');
+      return;
+    }
 
-    if (!driver || !vehicle) return;
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const token = localStorage.getItem('accessToken');
 
-    const newMapping: RouteMapping = {
-      id: `RM-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
-      from: staffInfo.location,
-      to: toLocation,
-      driverId: driver.id,
-      driverName: driver.name,
-      vehicleId: vehicle.id,
-      vehicleNumber: vehicle.number,
-      routePath: fullRoutePath,
-      stopsCount: selectedStops.length
-    };
+      const response = await fetch(`${apiUrl}routes/create/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          from_location: staffLocationId || 1, // Fallback to 1 if not found
+          to_location: toLocObj.id,
+          route_path: selectedStops,
+          driver: parseInt(selectedDriverId),
+          vehicle: parseInt(selectedVehicleId)
+        })
+      });
 
-    setMappings([...mappings, newMapping]);
-    toast.success(`New route dedicated to ${toLocation} mapped!`);
-    setToLocation('');
-    setSelectedStops([]);
-    setSelectedDriverId('');
-    setSelectedVehicleId('');
+      if (response.ok) {
+        toast.success(`New route dedicated to ${toLocation} mapped!`);
+        setToLocation('');
+        setSelectedStops([]);
+        setSelectedDriverId('');
+        setSelectedVehicleId('');
+        
+        // Refetch routes
+        const routeRes = await fetch(`${apiUrl}routes/`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (routeRes.ok) setMappings(await routeRes.json());
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to create route');
+      }
+    } catch (error) {
+      console.error('Error creating route:', error);
+      setError('An error occurred while creating route');
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setMappings(mappings.filter(m => m.id !== id));
-    toast.error('Route mapping removed');
+  const handleDelete = async (id: string) => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const token = localStorage.getItem('accessToken');
+
+      const response = await fetch(`${apiUrl}routes/${id}/`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        toast.error('Route mapping removed');
+        // Refetch routes
+        const routeRes = await fetch(`${apiUrl}routes/`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (routeRes.ok) setMappings(await routeRes.json());
+      } else {
+        const errorData = await response.json();
+        toast.error(`Error: ${errorData.error || 'Failed to delete route'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting route:', error);
+      toast.error('An error occurred while deleting route');
+    }
   };
 
   const startEditing = (mapping: RouteMapping) => {
@@ -283,36 +374,63 @@ export default function RouteMappingPage() {
     setEditVehicleId(mapping.vehicleId.toString());
   };
 
-  const handleSaveEdit = (id: string) => {
-    const driver = MOCK_DRIVERS.find(d => d.id === parseInt(editDriverId));
-    const vehicle = MOCK_VEHICLES.find(v => v.id === parseInt(editVehicleId));
+  const handleSaveEdit = async (id: string) => {
+    const toLocObj = locations.find(l => l.name === editTo);
+    if (!toLocObj) {
+      toast.error('Destination location not found in list');
+      return;
+    }
 
-    if (!driver || !vehicle || !editTo) return;
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const token = localStorage.getItem('accessToken');
 
-    const updatedRoutePath = [staffInfo.location, ...editStops, editTo].filter(Boolean);
+      const response = await fetch(`${apiUrl}routes/${id}/`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          to_location: toLocObj.id,
+          route_path: editStops,
+          driver: parseInt(editDriverId),
+          vehicle: parseInt(editVehicleId)
+        })
+      });
 
-    setMappings(mappings.map(m => 
-      m.id === id ? { 
-        ...m, 
-        to: editTo, 
-        driverId: driver.id, 
-        driverName: driver.name, 
-        vehicleId: vehicle.id, 
-        vehicleNumber: vehicle.number,
-        routePath: updatedRoutePath,
-        stopsCount: editStops.length
-      } : m
-    ));
-    setEditingId(null);
-    toast.info('Route mapping updated');
+      if (response.ok) {
+        toast.info('Route mapping updated');
+        setEditingId(null);
+        
+        // Refetch routes
+        const routeRes = await fetch(`${apiUrl}routes/`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (routeRes.ok) setMappings(await routeRes.json());
+      } else {
+        const errorData = await response.json();
+        toast.error(`Error: ${errorData.error || 'Failed to update route'}`);
+      }
+    } catch (error) {
+      console.error('Error updating route:', error);
+      toast.error('An error occurred while updating route');
+    }
   };
 
-  const filteredMappings = mappings.filter(m => 
-    m.to.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    m.driverName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    m.vehicleNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    m.routePath.join(' ').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredMappings = mappings.filter(m => {
+    const toLocation = m.to_location?.name || '';
+    const driverName = m.driver?.user_name || '';
+    const vehicleNumber = m.vehicle?.vehicle_number || '';
+    const routePathStr = m.route_path ? m.route_path.join(' ') : '';
+
+    return (
+      toLocation.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      driverName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vehicleNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      routePathStr.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
 
   return (
     <PortalLayout role="staff" title="Route Mapping">
@@ -412,7 +530,7 @@ export default function RouteMappingPage() {
                   <SearchableSelect 
                     value={selectedDriverId}
                     onSelect={setSelectedDriverId}
-                    options={MOCK_DRIVERS.map(d => ({ id: d.id.toString(), label: d.name, sublabel: `ID: ${d.id}` }))}
+                    options={drivers.map(d => ({ id: d.id.toString(), label: d.user_name || `Driver ${d.id}`, sublabel: `Lic: ${d.license_number}` }))}
                     placeholder="Select Driver"
                     icon={<UserIcon className="h-4 w-4" />}
                     className="h-11"
@@ -424,7 +542,7 @@ export default function RouteMappingPage() {
                   <SearchableSelect 
                     value={selectedVehicleId}
                     onSelect={setSelectedVehicleId}
-                    options={MOCK_VEHICLES.map(v => ({ id: v.id.toString(), label: v.number, sublabel: v.name }))}
+                    options={vehicles.map(v => ({ id: v.id.toString(), label: v.vehicle_number }))}
                     placeholder="Select Vehicle"
                     icon={<Truck className="h-4 w-4" />}
                     className="h-11"
@@ -495,7 +613,7 @@ export default function RouteMappingPage() {
                     filteredMappings.map((mapping) => (
                       <tr key={mapping.id} className="hover:bg-gray-50/50 transition-colors group">
                         <td className="px-6 py-5 align-top">
-                          <span className="text-sm font-black text-secondary">{mapping.from}</span>
+                          <span className="text-sm font-black text-secondary">{mapping.from_location?.name || 'Unknown'}</span>
                         </td>
                         <td className="px-6 py-5 align-top">
                            {editingId === mapping.id ? (
@@ -518,48 +636,48 @@ export default function RouteMappingPage() {
                                </button>
                              </div>
                            ) : (
-                            <div className="space-y-4">
+                             <div className="space-y-4">
                                <div className="flex flex-wrap items-center gap-y-3">
-                                 {mapping.routePath.map((stop, i) => (
+                                 {mapping.route_path && Array.isArray(mapping.route_path) ? mapping.route_path.map((stop: string, i: number) => (
                                    <React.Fragment key={i}>
                                      <div className={cn(
                                        "px-3 py-1 text-[10px] font-black rounded-[4px] transition-transform hover:scale-105",
                                        i === 0 ? "bg-blue-600 text-white shadow-sm" : 
-                                       i === mapping.routePath.length - 1 ? "bg-green-600 text-white shadow-sm" : 
+                                       i === mapping.route_path.length - 1 ? "bg-green-600 text-white shadow-sm" : 
                                        "bg-white border border-gray-200 text-secondary"
                                      )}>
                                        {stop}
                                      </div>
-                                     {i < mapping.routePath.length - 1 && (
+                                     {i < mapping.route_path.length - 1 && (
                                        <div className="px-2">
                                          <ArrowRight className="h-3 w-3 text-gray-300" />
                                        </div>
                                      )}
                                    </React.Fragment>
-                                 ))}
+                                 )) : null}
                                </div>
                                <div className="flex items-center gap-2">
-                                 <span className="text-[9px] font-black uppercase bg-primary text-white px-2 py-0.5 rounded-[4px] ring-4 ring-primary/10">
-                                   {mapping.stopsCount || 0} Intermediate Stops
-                                 </span>
-                               </div>
+                                  <span className="text-[9px] font-black uppercase bg-primary text-white px-2 py-0.5 rounded-[4px] ring-4 ring-primary/10">
+                                    {mapping.route_path ? mapping.route_path.length : 0} Intermediate Stops
+                                  </span>
+                                </div>
                             </div>
                            )}
                         </td>
                         <td className="px-6 py-5 align-top">
                           <div className="flex flex-col">
-                            <span className="text-xs font-black text-secondary">{mapping.to}</span>
+                            <span className="text-xs font-black text-secondary">{mapping.to_location?.name || 'Unknown'}</span>
                             <span className="text-[9px] text-text-muted mt-1 uppercase tracking-tighter">Final Hub</span>
                           </div>
                         </td>
                         <td className="px-6 py-5 align-top">
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
-                              {editingId === mapping.id ? (
+                               {editingId === mapping.id ? (
                                 <SearchableSelect 
                                   value={editDriverId}
                                   onSelect={setEditDriverId}
-                                  options={MOCK_DRIVERS.map(d => ({ id: d.id.toString(), label: d.name }))}
+                                  options={drivers.map(d => ({ id: d.id.toString(), label: d.user_name || `Driver ${d.id}` }))}
                                   className="w-40 h-8 text-[11px]"
                                 />
                               ) : (
@@ -567,16 +685,18 @@ export default function RouteMappingPage() {
                                   <div className="p-1.5 bg-gray-50 rounded-[4px]">
                                     <UserIcon className="h-3 w-3 text-gray-400" />
                                   </div>
-                                  <span className="text-xs font-bold text-text-main">{mapping.driverName}</span>
+                                  <span className="text-xs font-bold text-text-main">
+                                    {mapping.driver?.user_name || 'Unknown'}
+                                  </span>
                                 </>
                               )}
                             </div>
                             <div className="flex items-center gap-2">
-                              {editingId === mapping.id ? (
+                               {editingId === mapping.id ? (
                                 <SearchableSelect 
                                   value={editVehicleId}
                                   onSelect={setEditVehicleId}
-                                  options={MOCK_VEHICLES.map(v => ({ id: v.id.toString(), label: v.number }))}
+                                  options={vehicles.map(v => ({ id: v.id.toString(), label: v.vehicle_number }))}
                                   className="w-40 h-8 text-[11px]"
                                 />
                               ) : (
@@ -584,7 +704,7 @@ export default function RouteMappingPage() {
                                   <div className="p-1.5 bg-gray-50 rounded-[4px]">
                                     <Truck className="h-3 w-3 text-gray-400" />
                                   </div>
-                                  <span className="text-xs font-mono font-black text-secondary">{mapping.vehicleNumber}</span>
+                                  <span className="text-xs font-mono font-black text-secondary">{mapping.vehicle?.vehicle_number || 'Unknown'}</span>
                                 </>
                               )}
                             </div>
@@ -651,6 +771,7 @@ export default function RouteMappingPage() {
         to={editingId ? editTo : toLocation}
         selectedStops={selectedStops}
         onChange={setSelectedStops}
+        locations={locations}
       />
 
       <Toaster position="bottom-right" richColors />

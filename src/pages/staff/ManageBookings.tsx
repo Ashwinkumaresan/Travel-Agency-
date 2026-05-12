@@ -9,7 +9,7 @@ import {
   Banknote, Wallet, ArrowUpCircle, ArrowDownCircle,
   Navigation, XCircle
 } from 'lucide-react';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Booking, RouteMapping, PaymentMode, GDM } from '@/types';
 import { useNavigate } from 'react-router-dom';
@@ -33,25 +33,187 @@ export default function ManageBookings() {
   const [filterVehicleNo, setFilterVehicleNo] = useState('');
   const [filterRoute, setFilterRoute] = useState('');
 
-  const [bookings, setBookings] = useState<Booking[]>(() => {
-    const saved = localStorage.getItem('voyage_bookings');
-    return saved ? JSON.parse(saved) : MOCK_BOOKINGS;
-  });
-  
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [locations, setLocations] = useState<{id: number, name: string}[]>([]);
+
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+        const token = localStorage.getItem('accessToken');
+        const response = await fetch(`${apiUrl}locations/other/`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setLocations(data);
+        }
+      } catch (error) {
+        console.error('Error fetching locations:', error);
+      }
+    };
+    fetchLocations();
+  }, []);
+
+  const [vehicles, setVehicles] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchVehicles = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+        const token = localStorage.getItem('accessToken');
+        const response = await fetch(`${apiUrl}vehicles/`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setVehicles(data);
+        }
+      } catch (error) {
+        console.error('Error fetching vehicles:', error);
+      }
+    };
+    fetchVehicles();
+  }, []);
+
+  const [routes, setRoutes] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchRoutes = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+        const token = localStorage.getItem('accessToken');
+        const response = await fetch(`${apiUrl}routes/`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setRoutes(data);
+        }
+      } catch (error) {
+        console.error('Error fetching routes:', error);
+      }
+    };
+    fetchRoutes();
+  }, []);
+
+  const mapBackendStatusToFrontend = (status: string): Booking['status'] => {
+    if (status === 'inplace') return 'in-place';
+    if (status === 'shipping') return 'shipping';
+    if (status === 'delevered') return 'sent'; // Backend spells it 'delevered'
+    return 'in-place';
+  };
+
+  const fetchBookings = async () => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const token = localStorage.getItem('accessToken');
+      
+      let url = `${apiUrl}couriers/`;
+      const params = new URLSearchParams();
+      
+      if (activeTab === 'in-place') params.append('status', 'inplace');
+      else if (activeTab === 'shipping') params.append('status', 'shipping');
+      else if (activeTab === 'sent') params.append('status', 'sent');
+      else if (activeTab === 'incoming') params.append('status', 'incoming');
+      else if (activeTab === 'received') params.append('status', 'recieved'); // Backend spells it 'recieved'
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        const mappedData: Booking[] = data.map((c: any) => {
+          const fromLocationName = c.from_location?.name || `Branch ${c.from_location}`;
+          const toLocationName = c.to_location?.name || `Branch ${c.to_location}`;
+          
+          return {
+            id: c.id.toString(),
+            lrNo: c.lr_number,
+            customerName: c.sender_name,
+            customerEmail: '',
+            customerPhone: c.sender_phone_num,
+            pickupLocation: fromLocationName,
+            deliveryLocation: toLocationName,
+            travelDate: c.created_at ? c.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+            travellersCount: 1,
+            totalPrice: parseFloat(c.total) || 0,
+            status: mapBackendStatusToFrontend(c.status),
+            paymentMode: c.payment_mode || 'Cash',
+            paymentStatus: c.payment_status || 'to-pay',
+            submittedAt: c.created_at,
+            weightKg: parseFloat(c.weight) || 0,
+            vehicleNo: c.vehicle ? (c.vehicle.vehicle_number || c.vehicle) : ''
+          };
+        });
+        
+        setBookings(mappedData);
+      }
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchBookings();
+  }, [activeTab, locations]);
+
   const saveBookings = (newBookings: Booking[]) => {
     setBookings(newBookings);
-    localStorage.setItem('voyage_bookings', JSON.stringify(newBookings));
   };
   
   const navigate = useNavigate();
   const currentStaffLocation = 'Chennai';
 
-  const handleStatusUpdate = (bookingId: string, nextStatus: Booking['status']) => {
-    const updated = bookings.map(b => 
-      b.id === bookingId ? { ...b, status: nextStatus } : b
-    );
-    saveBookings(updated);
-    toast.success(`Booking ${bookingId} moved to ${nextStatus.replace('-', ' ')}`);
+  const handleStatusUpdate = async (bookingId: string, nextStatus: Booking['status']) => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const token = localStorage.getItem('accessToken');
+      
+      let endpoint = '';
+      if (nextStatus === 'shipping') {
+        endpoint = `${apiUrl}couriers/${bookingId}/mark-shipping/`;
+      } else if (nextStatus === 'sent' || nextStatus === 'received') {
+        endpoint = `${apiUrl}couriers/${bookingId}/mark-delivered/`;
+      }
+      
+      if (!endpoint) {
+        toast.error(`Unsupported status transition to ${nextStatus}`);
+        return;
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        toast.success(`Booking ${bookingId} moved to ${nextStatus.replace('-', ' ')}`);
+        fetchBookings();
+      } else {
+        const errorData = await response.json();
+        toast.error(`Error: ${errorData.error || 'Failed to update status'}`);
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('An error occurred while updating status');
+    }
   };
 
   const handlePaymentUpdate = (bookingId: string) => {
@@ -63,26 +225,81 @@ export default function ManageBookings() {
     setIsPaymentModalOpen(null);
   };
 
-  const handleBulkVehicleAssign = (vehicleNo: string) => {
-    const updated = bookings.map(b => 
-      (selectedIds.includes(b.id) && b.status === 'in-place') ? { ...b, vehicleNo } : b
-    );
-    saveBookings(updated);
-    toast.success(`Vehicle assigned to eligible bookings`);
-    setSelectedIds([]);
-    setIsVehicleModalOpen(false);
+  const handleBulkVehicleAssign = async (routeId: number) => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const token = localStorage.getItem('accessToken');
+
+      const promises = selectedIds.map(async (id) => {
+        const response = await fetch(`${apiUrl}couriers/assign-route/`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ courier_id: parseInt(id), route_id: routeId })
+        });
+        return response;
+      });
+
+      const results = await Promise.all(promises);
+      const allOk = results.every(r => r.ok);
+
+      if (allOk) {
+        toast.success(`Route assigned to ${selectedIds.length} bookings`);
+        setSelectedIds([]);
+        setIsVehicleModalOpen(false);
+        fetchBookings();
+      } else {
+        toast.error('Failed to assign route to some bookings');
+      }
+    } catch (error) {
+      console.error('Error assigning route:', error);
+      toast.error('An error occurred while assigning route');
+    }
   };
 
-  const handleBulkStatusChange = (status: Booking['status']) => {
-    const updated = bookings.map(b => 
-      selectedIds.includes(b.id) ? { ...b, status } : b
-    );
-    saveBookings(updated);
-    toast.success(`${selectedIds.length} bookings marked as ${status.replace('-', ' ')}`);
-    setSelectedIds([]);
+  const handleBulkStatusChange = async (status: Booking['status']) => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const token = localStorage.getItem('accessToken');
+      
+      let endpoint = '';
+      if (status === 'shipping') {
+        endpoint = `${apiUrl}couriers/bulk-mark-shipping/`;
+      } else if (status === 'sent' || status === 'received') {
+        endpoint = `${apiUrl}couriers/bulk-mark-delivered/`;
+      }
+      
+      if (!endpoint) {
+        toast.error(`Unsupported bulk status transition to ${status}`);
+        return;
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ courier_ids: selectedIds.map(id => parseInt(id)) })
+      });
+
+      if (response.ok) {
+        toast.success(`${selectedIds.length} bookings marked as ${status.replace('-', ' ')}`);
+        setSelectedIds([]);
+        fetchBookings();
+      } else {
+        const errorData = await response.json();
+        toast.error(`Error: ${errorData.error || 'Failed to update status'}`);
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('An error occurred while updating status');
+    }
   };
 
-  const handleGenerateGDM = () => {
+  const handleGenerateGDM = async () => {
     const selectedBookings = bookings.filter(b => selectedIds.includes(b.id));
     
     // Validate assignments
@@ -92,35 +309,33 @@ export default function ManageBookings() {
       return;
     }
 
-    // Capture the first booking's route info for the GDM header (assuming same route for bulk)
-    const first = selectedBookings[0];
-    const mapping = MOCK_ROUTE_MAPPINGS.find(m => m.vehicleNumber === first.vehicleNo);
-    const driver = MOCK_DRIVERS.find(d => d.id === mapping?.driverId);
-    
-    const newGDM: GDM = {
-      id: `GDM-${Date.now()}`,
-      gdmNo: `GDM-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-      vehicleNo: first.vehicleNo || 'TN-XX-XX-XXXX',
-      driverName: mapping?.driverName || 'Assigned Driver',
-      driverPhone: driver?.phone || '+91 00000 00000',
-      route: `${first.pickupLocation} → ${first.deliveryLocation}`,
-      totalLRCount: selectedBookings.length,
-      totalPackages: selectedBookings.length, // Simplified
-      totalWeight: selectedBookings.reduce((sum, b) => sum + (b.weightKg || 0), 0),
-      totalFreight: selectedBookings.reduce((sum, b) => sum + b.totalPrice, 0),
-      paidCount: selectedBookings.filter(b => b.paymentStatus === 'paid').length,
-      toPayCount: selectedBookings.filter(b => b.paymentStatus !== 'paid').length,
-      dispatchDate: new Date().toISOString(),
-      status: 'generated',
-      lrIds: selectedIds
-    };
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const token = localStorage.getItem('accessToken');
 
-    // Store in localStorage for cross-page visibility in this demo environment
-    const existingGDMs = JSON.parse(localStorage.getItem('voyage_gdms') || '[]');
-    localStorage.setItem('voyage_gdms', JSON.stringify([newGDM, ...existingGDMs]));
+      const response = await fetch(`${apiUrl}gdms/create/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          couriers: selectedIds.map(id => parseInt(id))
+        })
+      });
 
-    toast.success(`GDM Generated successfully for ${selectedIds.length} bookings`);
-    setSelectedIds([]);
+      if (response.ok) {
+        toast.success(`GDM Generated successfully for ${selectedIds.length} bookings`);
+        setSelectedIds([]);
+        fetchBookings();
+      } else {
+        const errorData = await response.json();
+        toast.error(`Error: ${errorData.error || 'Failed to generate GDM'}`);
+      }
+    } catch (error) {
+      console.error('Error generating GDM:', error);
+      toast.error('An error occurred while generating GDM');
+    }
   };
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -151,27 +366,13 @@ export default function ManageBookings() {
         b.lrNo?.toLowerCase().includes(searchTerm.toLowerCase()) || 
         b.customerName.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const statusMatches = activeTab === 'all' 
-        ? true 
-        : activeTab === 'sent'
-          ? (b.status === 'sent' || b.status === 'received')
-          : b.status === activeTab;
-      
-      // Location-aware filtering logic
-      let locationMatches = true;
-      if (activeTab === 'in-place' || activeTab === 'shipping' || activeTab === 'sent') {
-        locationMatches = b.pickupLocation === currentStaffLocation;
-      } else if (activeTab === 'incoming' || activeTab === 'received') {
-        locationMatches = b.deliveryLocation === currentStaffLocation;
-      }
-      
       const vehicleMatches = !filterVehicleNo || b.vehicleNo === filterVehicleNo;
       const routeMatches = !filterRoute || 
                           `${b.pickupLocation} → ${b.deliveryLocation}` === filterRoute;
 
-      return matchesSearch && statusMatches && locationMatches && vehicleMatches && routeMatches;
+      return matchesSearch && vehicleMatches && routeMatches;
     });
-  }, [bookings, searchTerm, activeTab, filterVehicleNo, filterRoute, currentStaffLocation]);
+  }, [bookings, searchTerm, filterVehicleNo, filterRoute]);
 
   const tabs = [
     { id: 'all', label: 'All', count: bookings.length },
@@ -201,12 +402,6 @@ export default function ManageBookings() {
                 )}
               >
                 <span className="text-xs uppercase tracking-wider">{tab.label}</span>
-                <span className={cn(
-                  "text-[10px] px-1.5 py-0.5 rounded-[4px]",
-                  activeTab === tab.id ? "bg-primary/10 text-primary" : "bg-gray-200/50 text-text-muted"
-                )}>
-                  {tab.count}
-                </span>
                 {activeTab === tab.id && (
                   <motion.div layoutId="tab-underline" className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary rounded-[4px] mx-1" />
                 )}
@@ -290,12 +485,14 @@ export default function ManageBookings() {
               <thead className="bg-gray-50/80 sticky top-0 z-10 backdrop-blur-md">
                 <tr>
                   <th className="px-6 py-4 w-12">
-                    <input 
-                      type="checkbox" 
-                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer transition-all"
-                      onChange={handleSelectAll}
-                      checked={filteredBookings.length > 0 && selectedIds.length === filteredBookings.length}
-                    />
+                    {activeTab !== 'all' && (
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer transition-all"
+                        onChange={handleSelectAll}
+                        checked={filteredBookings.length > 0 && selectedIds.length === filteredBookings.length}
+                      />
+                    )}
                   </th>
                   <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">LR Number</th>
                   <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Customer</th>
@@ -303,7 +500,9 @@ export default function ManageBookings() {
                   <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Vehicle No</th>
                   <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Finances</th>
                   <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider text-right uppercase tracking-widest">Controls</th>
+                  {activeTab !== 'all' && (
+                    <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider text-right uppercase tracking-widest">Controls</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -328,12 +527,14 @@ export default function ManageBookings() {
                       selectedIds.includes(booking.id) && "bg-primary-light/10 hover:bg-primary-light/20"
                     )}>
                       <td className="px-6 py-5">
-                        <input 
-                          type="checkbox" 
-                          className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer transition-all"
-                          checked={selectedIds.includes(booking.id)}
-                          onChange={() => handleSelectRow(booking.id)}
-                        />
+                        {activeTab !== 'all' && (
+                          <input 
+                            type="checkbox" 
+                            className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer transition-all"
+                            checked={selectedIds.includes(booking.id)}
+                            onChange={() => handleSelectRow(booking.id)}
+                          />
+                        )}
                       </td>
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-2">
@@ -437,67 +638,69 @@ export default function ManageBookings() {
                           {booking.status.replace('-', ' ')}
                         </span>
                       </td>
-                      <td className="px-6 py-5 text-right">
-                        <ActionMenu 
-                          items={[
-                            {
-                              label: 'View Details',
-                              icon: <Eye className="h-4 w-4" />,
-                              onClick: () => setSelectedBooking(booking)
-                            },
-                            ...(booking.status === 'in-place' ? [
+                      {activeTab !== 'all' && (
+                        <td className="px-6 py-5 text-right">
+                          <ActionMenu 
+                            items={[
                               {
-                                label: 'Mark as Shipping',
-                                icon: <ArrowUpCircle className="h-4 w-4" />,
-                                onClick: () => handleStatusUpdate(booking.id, 'shipping'),
-                                variant: 'success' as const
-                              }
-                            ] : []),
-                            ...(booking.status === 'shipping' ? [
-                              {
-                                label: 'Mark as Sent',
-                                icon: <ArrowUpCircle className="h-4 w-4" />,
-                                onClick: () => handleStatusUpdate(booking.id, 'sent'),
-                                variant: 'success' as const
+                                label: 'View Details',
+                                icon: <Eye className="h-4 w-4" />,
+                                onClick: () => setSelectedBooking(booking)
                               },
-                              {
-                                label: 'Move to In Place',
-                                icon: <ArrowDownCircle className="h-4 w-4" />,
-                                onClick: () => handleStatusUpdate(booking.id, 'in-place')
-                              }
-                            ] : []),
-                            ...(booking.status === 'sent' ? [
-                              {
-                                label: 'Mark as Incoming (Dest)',
-                                icon: <ChevronRight className="h-4 w-4" />,
-                                onClick: () => handleStatusUpdate(booking.id, 'incoming'),
-                                variant: 'success' as const
-                              }
-                            ] : []),
-                            ...(booking.status === 'incoming' ? [
-                              {
-                                label: 'Mark as Received',
-                                icon: <CheckCircle className="h-4 w-4" />,
-                                onClick: () => handleStatusUpdate(booking.id, 'received'),
-                                variant: 'success' as const
-                              }
-                            ] : []),
-                            ...(booking.status === 'received' ? [
-                              {
-                                label: 'Mark as Not Received',
-                                icon: <XCircle className="h-4 w-4" />,
-                                onClick: () => handleStatusUpdate(booking.id, 'incoming')
-                              },
-                              ...(booking.paymentStatus === 'to-pay' ? [{
-                                label: 'Update Payment',
-                                icon: <Banknote className="h-4 w-4" />,
-                                onClick: () => setIsPaymentModalOpen(booking),
-                                variant: 'success' as const
-                              }] : [])
-                            ] : [])
-                          ]}
-                        />
-                      </td>
+                              ...(booking.status === 'in-place' ? [
+                                {
+                                  label: 'Mark as Shipping',
+                                  icon: <ArrowUpCircle className="h-4 w-4" />,
+                                  onClick: () => handleStatusUpdate(booking.id, 'shipping'),
+                                  variant: 'success' as const
+                                }
+                              ] : []),
+                              ...(booking.status === 'shipping' && activeTab === 'incoming' ? [
+                                {
+                                  label: 'Mark as Sent',
+                                  icon: <ArrowUpCircle className="h-4 w-4" />,
+                                  onClick: () => handleStatusUpdate(booking.id, 'sent'),
+                                  variant: 'success' as const
+                                },
+                                {
+                                  label: 'Move to In Place',
+                                  icon: <ArrowDownCircle className="h-4 w-4" />,
+                                  onClick: () => handleStatusUpdate(booking.id, 'in-place')
+                                }
+                              ] : []),
+                              ...(booking.status === 'sent' ? [
+                                {
+                                  label: 'Mark as Incoming (Dest)',
+                                  icon: <ChevronRight className="h-4 w-4" />,
+                                  onClick: () => handleStatusUpdate(booking.id, 'incoming'),
+                                  variant: 'success' as const
+                                }
+                              ] : []),
+                              ...(booking.status === 'incoming' ? [
+                                {
+                                  label: 'Mark as Received',
+                                  icon: <CheckCircle className="h-4 w-4" />,
+                                  onClick: () => handleStatusUpdate(booking.id, 'received'),
+                                  variant: 'success' as const
+                                }
+                              ] : []),
+                              ...(booking.status === 'received' ? [
+                                {
+                                  label: 'Mark as Not Received',
+                                  icon: <XCircle className="h-4 w-4" />,
+                                  onClick: () => handleStatusUpdate(booking.id, 'incoming')
+                                },
+                                ...(booking.paymentStatus === 'to-pay' ? [{
+                                  label: 'Update Payment',
+                                  icon: <Banknote className="h-4 w-4" />,
+                                  onClick: () => setIsPaymentModalOpen(booking),
+                                  variant: 'success' as const
+                                }] : [])
+                              ] : [])
+                            ]}
+                          />
+                        </td>
+                      )}
                     </tr>
                   ))
                 )}
@@ -530,105 +733,70 @@ export default function ManageBookings() {
 
                 {(() => {
                   const selectedBookings = bookings.filter(b => selectedIds.includes(b.id));
-                  const currentRoute = selectedBookings.length > 0 
-                    ? `${selectedBookings[0].pickupLocation} → ${selectedBookings[0].deliveryLocation}`
-                    : null;
-                  const allSameRoute = selectedBookings.every(b => `${b.pickupLocation} → ${b.deliveryLocation}` === currentRoute);
-
-                  const filteredMappings = MOCK_ROUTE_MAPPINGS.filter(m => 
-                    m.vehicleNumber.toLowerCase().includes(vehicleSearch.toLowerCase()) || 
-                    m.driverName.toLowerCase().includes(vehicleSearch.toLowerCase()) ||
-                    m.from.toLowerCase().includes(vehicleSearch.toLowerCase()) ||
-                    m.to.toLowerCase().includes(vehicleSearch.toLowerCase())
-                  );
-
-                  const routeMatches = filteredMappings.filter(m => allSameRoute && `${m.from} → ${m.to}` === currentRoute);
-                  const otherMappings = filteredMappings.filter(m => !allSameRoute || `${m.from} → ${m.to}` !== currentRoute);
+                  
+                  // Filter routes based on search
+                  const filteredRoutes = routes.filter(r => {
+                    const vehicleNumber = r.vehicle?.vehicle_number || '';
+                    const driverName = r.driver?.user_name || '';
+                    const fromLoc = r.from_location?.name || '';
+                    const toLoc = r.to_location?.name || '';
+                    
+                    return (
+                      vehicleNumber.toLowerCase().includes(vehicleSearch.toLowerCase()) ||
+                      driverName.toLowerCase().includes(vehicleSearch.toLowerCase()) ||
+                      fromLoc.toLowerCase().includes(vehicleSearch.toLowerCase()) ||
+                      toLoc.toLowerCase().includes(vehicleSearch.toLowerCase())
+                    );
+                  });
 
                   return (
                     <div className="space-y-6">
-                      {routeMatches.length > 0 && (
-                        <div className="space-y-3">
-                          <p className="text-[10px] font-black text-primary uppercase tracking-widest px-2 flex items-center gap-2">
-                             <CheckCircle className="h-3 w-3" /> Recommended for this Route
-                          </p>
-                          <div className="grid grid-cols-1 gap-2">
-                            {routeMatches.map(mapping => (
-                              <button 
-                                key={mapping.id}
-                                onClick={() => {
-                                   handleBulkVehicleAssign(mapping.vehicleNumber);
-                                   setVehicleSearch('');
-                                }}
-                                className="w-full p-4 border border-primary/20 bg-primary/5 rounded-[8px] hover:border-primary/40 text-left transition-all group shrink-0"
-                              >
-                                <div className="flex items-center justify-between mb-3">
-                                   <div className="flex items-center gap-3">
-                                     <div className="p-2 bg-primary text-white rounded-[8px] shadow-lg shadow-primary/20"><Truck className="h-4 w-4" /></div>
-                                     <span className="font-black text-secondary font-mono tracking-tight text-base">{mapping.vehicleNumber}</span>
-                                   </div>
-                                   <div className="flex flex-col items-end">
-                                     <span className="text-[10px] font-black text-primary uppercase tracking-widest">Active Mapping</span>
-                                     <span className="text-[9px] font-bold text-primary/60 italic uppercase">{mapping.from} → {mapping.to}</span>
-                                   </div>
-                                </div>
-                                <div className="flex items-center gap-4 pt-3 border-t border-primary/10">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-[4px] bg-white flex items-center justify-center border border-primary/10 shadow-sm">
-                                      <User className="h-3 w-3 text-primary" />
-                                    </div>
-                                    <span className="text-xs font-bold text-secondary">{mapping.driverName}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-[4px] bg-white flex items-center justify-center border border-primary/10 shadow-sm">
-                                      <Navigation className="h-3 w-3 text-primary" />
-                                    </div>
-                                    <span className="text-[10px] font-black text-text-muted uppercase tracking-tighter">Fastest Path</span>
-                                  </div>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {otherMappings.length > 0 && (
+                      {filteredRoutes.length > 0 && (
                         <div className="space-y-3">
                           <p className="text-[10px] font-black text-text-muted uppercase tracking-widest px-2">
-                             {routeMatches.length > 0 ? "Other Available Mappings" : "All Available Mappings"}
+                             Available Routes
                           </p>
                           <div className="grid grid-cols-1 gap-2">
-                            {otherMappings.map(mapping => (
-                              <button 
-                                key={mapping.id}
-                                onClick={() => {
-                                   handleBulkVehicleAssign(mapping.vehicleNumber);
-                                   setVehicleSearch('');
-                                }}
-                                className="w-full p-4 border border-gray-100 rounded-[8px] hover:border-primary/30 hover:bg-gray-50 text-left transition-all group shrink-0"
-                              >
-                                <div className="flex items-center justify-between mb-3">
-                                   <div className="flex items-center gap-3">
-                                     <div className="p-2 bg-gray-100 text-gray-500 rounded-[8px] group-hover:bg-primary group-hover:text-white transition-colors"><Truck className="h-4 w-4" /></div>
-                                     <span className="font-black text-secondary font-mono tracking-tight">{mapping.vehicleNumber}</span>
-                                   </div>
-                                   <span className="text-[9px] font-bold text-text-muted uppercase italic tracking-tighter">{mapping.from} → {mapping.to}</span>
-                                </div>
-                                <div className="flex items-center gap-4 pt-3 border-t border-gray-50">
-                                  <div className="flex items-center gap-2">
-                                    <User className="h-3.5 w-3.5 text-gray-400" />
-                                    <span className="text-xs font-bold text-text-muted group-hover:text-secondary transition-colors">{mapping.driverName}</span>
+                            {filteredRoutes.map(route => {
+                              const vehicleNumber = route.vehicle?.vehicle_number || 'No Vehicle';
+                              const fromLoc = route.from_location?.name || 'Unknown';
+                              const toLoc = route.to_location?.name || 'Unknown';
+                              const driverName = route.driver?.user_name || 'No Driver';
+                              
+                              return (
+                                <button 
+                                  key={route.id}
+                                  onClick={() => {
+                                     handleBulkVehicleAssign(route.id);
+                                     setVehicleSearch('');
+                                  }}
+                                  className="w-full p-4 border border-gray-100 rounded-[8px] hover:border-primary/30 hover:bg-gray-50 text-left transition-all group shrink-0"
+                                >
+                                  <div className="flex items-center justify-between mb-3">
+                                     <div className="flex items-center gap-3">
+                                       <div className="p-2 bg-gray-100 text-gray-500 rounded-[8px] group-hover:bg-primary group-hover:text-white transition-colors"><Truck className="h-4 w-4" /></div>
+                                       <span className="font-black text-secondary font-mono tracking-tight">{vehicleNumber}</span>
+                                     </div>
+                                     <span className="text-[9px] font-bold text-text-muted uppercase italic tracking-tighter">
+                                        {route.route_path && Array.isArray(route.route_path) ? route.route_path.join(' → ') : `${fromLoc} → ${toLoc}`}
+                                      </span>
                                   </div>
-                                </div>
-                              </button>
-                            ))}
+                                  <div className="flex items-center gap-4 pt-3 border-t border-gray-50">
+                                    <div className="flex items-center gap-2">
+                                      <User className="h-3.5 w-3.5 text-gray-400" />
+                                      <span className="text-xs font-bold text-text-muted group-hover:text-secondary transition-colors">{driverName}</span>
+                                    </div>
+                                  </div>
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
 
-                      {filteredMappings.length === 0 && (
+                      {filteredRoutes.length === 0 && (
                         <div className="text-center py-12">
-                          <p className="text-sm font-bold text-text-muted italic">No matching route mappings found.</p>
+                          <p className="text-sm font-bold text-text-muted italic">No matching routes found.</p>
                         </div>
                       )}
                     </div>

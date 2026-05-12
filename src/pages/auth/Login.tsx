@@ -8,13 +8,43 @@ type LoginRole = 'customer' | 'staff' | 'admin';
 
 export default function Login() {
   const [role, setRole] = useState<LoginRole>('customer');
+  const [userId, setUserId] = useState('');
+  const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (role === 'customer') navigate('/app/dashboard');
-    else if (role === 'staff') navigate('/staff/book');
-    else navigate('/admin/dashboard');
+    if (role === 'staff') {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+        const response = await fetch(`${apiUrl}login/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ staffID: userId, password }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          localStorage.setItem('accessToken', data.access);
+          localStorage.setItem('refreshToken', data.refresh);
+          localStorage.setItem('staffID', data.staffID);
+          localStorage.setItem('username', data.username);
+          navigate('/staff/book');
+        } else {
+          alert(data.error || 'Login failed');
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        alert('An error occurred during login');
+      }
+    } else if (role === 'customer') {
+      navigate('/app/dashboard');
+    } else {
+      navigate('/admin/dashboard');
+    }
   };
 
   return (
@@ -112,6 +142,8 @@ export default function Login() {
                   placeholder={role === 'staff' ? 'STF-0042' : 'name@example.com'} 
                   className="input-field pl-10 h-11" 
                   required 
+                  value={userId}
+                  onChange={(e) => setUserId(e.target.value)}
                 />
               </div>
             </div>
@@ -123,7 +155,14 @@ export default function Login() {
               </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input type="password" placeholder="••••••••" className="input-field pl-10 h-11" required />
+                <input 
+                  type="password" 
+                  placeholder="••••••••" 
+                  className="input-field pl-10 h-11" 
+                  required 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
               </div>
             </div>
 

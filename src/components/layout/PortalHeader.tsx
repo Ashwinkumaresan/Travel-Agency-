@@ -35,8 +35,8 @@ export default function PortalHeader({ title, onMenuClick }: PortalHeaderProps) 
         
         <div className="flex items-center gap-3 pl-3 md:pl-6 border-l border-gray-100">
           <div className="text-right hidden sm:block">
-            <p className="text-profile-name font-bold text-secondary">John Doe</p>
-            <p className="text-email text-text-muted uppercase font-medium tracking-wider">Customer</p>
+            <p className="text-profile-name font-bold text-secondary">{localStorage.getItem('username')}</p>
+            <p className="text-email text-text-muted uppercase font-medium tracking-wider">{localStorage.getItem('staffID')}</p>
           </div>
           <div className="w-10 h-10 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center">
             <User className="h-6 w-6 text-gray-400" />
