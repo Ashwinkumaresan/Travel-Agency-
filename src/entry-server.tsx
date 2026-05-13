@@ -7,17 +7,17 @@ const SEO_DATA: Record<string, { title: string; description: string; canonical: 
   '/': {
     title: 'S A Salem Super Service | Reliable Parcel & Cargo Logistics in Tamil Nadu',
     description: 'S A Salem Super Service — Leading parcel and cargo service in Tamil Nadu since 2000. Door-to-door delivery, express cargo, packers & movers across Coimbatore, Salem, Chennai, Vellore & more.',
-    canonical: 'https://sasalemsuperservice.com/',
+    canonical: 'https://travel-agency-three-kappa.vercel.app/',
   },
   '/about': {
     title: 'About Us | S A Salem Super Service',
     description: 'Learn about S A Salem Super Service — a legacy of reliable logistics since 2000, serving Tamil Nadu with dedication and cutting-edge technology.',
-    canonical: 'https://sasalemsuperservice.com/about',
+    canonical: 'https://travel-agency-three-kappa.vercel.app/about',
   },
   '/contact': {
     title: 'Contact Us | S A Salem Super Service',
     description: 'Get in touch with S A Salem Super Service. Reach our branches in Mettur, Chennai, Bangalore, and Hyderabad for parcel and cargo bookings.',
-    canonical: 'https://sasalemsuperservice.com/contact',
+    canonical: 'https://travel-agency-three-kappa.vercel.app/contact',
   },
 };
 
@@ -27,8 +27,8 @@ const HOME_JSONLD = {
   "@type": "LogisticsService",
   "name": "S A Salem Super Service",
   "description": "Leading Parcel and Cargo Service Company in Tamil Nadu",
-  "url": "https://sasalemsuperservice.com",
-  "logo": "https://sasalemsuperservice.com/logo.png",
+  "url": "https://travel-agency-three-kappa.vercel.app",
+  "logo": "https://travel-agency-three-kappa.vercel.app/logo.png",
   "areaServed": [
     "Coimbatore", "Salem", "Chennai", "Vellore",
     "Mettur", "Bangalore", "Hyderabad", "Pondicherry"

@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /staff/
+Disallow: /admin/
+Disallow: /login
+Disallow: /register
+
+Sitemap: https://travel-agency-three-kappa.vercel.app/sitemap.xml
