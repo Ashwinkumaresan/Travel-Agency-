@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 type LoginRole = 'customer' | 'staff' | 'admin';
 
 export default function Login() {
-  const [role, setRole] = useState<LoginRole>('customer');
+  const [role, setRole] = useState<LoginRole>('staff');
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
@@ -50,29 +50,29 @@ export default function Login() {
   return (
     <div className="h-screen w-full bg-background flex overflow-hidden">
       {/* LEFT SIDE - Branding & Info (Hidden on mobile) */}
-      <div className="hidden md:flex md:w-1/2 bg-secondary p-12 flex-col justify-between text-white relative overflow-hidden h-full">
+      <div className="hidden md:flex md:w-1/2 bg-secondary p-12 flex-col justify-center text-white relative overflow-hidden h-full">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full -mr-32 -mt-32 blur-3xl" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary/10 rounded-full -ml-32 -mb-32 blur-3xl" />
         
         <Link to="/" className="flex items-center gap-2 relative z-10">
-          <div className="bg-primary p-2 rounded-md">
+          {/* <div className="bg-primary p-2 rounded-md">
             <Compass className="h-8 w-8 text-white" />
-          </div>
-          <span className="text-sidebar-logo md:text-2xl font-display font-bold text-white tracking-tight">
-            Voyage<span className="text-primary">Arc</span>
-          </span>
+          </div> */}
+          <h1 className="text-[5rem] font-display font-medium text-white tracking-tight">
+            S A Salem Super <span className="text-primary">Service</span>
+          </h1>
         </Link>
 
         <div className="relative z-10">
-          <h1 className="text-5xl font-display font-bold mb-6 leading-tight">
-            Welcome back to <br /> the world of <span className="text-primary">Adventure.</span>
+          <h1 className="text-5xl font-[Dancing_Script] mb-6 leading-tight">
+            Welcome back 
           </h1>
           <p className="text-gray-400 text-lg max-w-md">
-            Manage your trips, book new experiences, and explore the globe with VoyageArc.
+            Manage your Booking LR's, GDM's, Route Mapping and Accounts.
           </p>
         </div>
 
-        <div className="relative z-10 flex gap-8 text-sm text-gray-400">
+        {/* <div className="relative z-10 flex gap-8 text-sm text-gray-400">
           <div>
             <p className="text-white font-bold text-xl">10k+</p>
             <p>Happy Travellers</p>
@@ -85,7 +85,7 @@ export default function Login() {
             <p className="text-white font-bold text-xl">24/7</p>
             <p>Expert Support</p>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* RIGHT SIDE - Login Form */}
@@ -105,11 +105,11 @@ export default function Login() {
             <h2 className="text-2xl md:text-h1 font-display font-bold text-secondary mb-2">
               Sign In
             </h2>
-            <p className="text-sm text-text-muted">Please select your role to continue.</p>
+            <p className="text-sm text-text-muted">Enter your credentials to login</p>
           </div>
 
           {/* Role Selector */}
-          <div className="flex p-1 bg-gray-100 rounded-md mb-6">
+          {/* <div className="flex p-1 bg-gray-100 rounded-md mb-6">
             {(['customer', 'staff', 'admin'] as LoginRole[]).map((r) => (
               <button
                 key={r}
@@ -124,7 +124,7 @@ export default function Login() {
                 {r}
               </button>
             ))}
-          </div>
+          </div> */}
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-1.5">
@@ -139,7 +139,7 @@ export default function Login() {
                 )}
                 <input 
                   type={role === 'staff' ? 'text' : 'email'} 
-                  placeholder={role === 'staff' ? 'STF-0042' : 'name@example.com'} 
+                  placeholder={role === 'staff' ? 'staff-1' : 'name@example.com'} 
                   className="input-field pl-10 h-11" 
                   required 
                   value={userId}
@@ -151,7 +151,7 @@ export default function Login() {
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
                 <label className="input-label">Password</label>
-                <button type="button" className="text-xs font-bold text-primary hover:underline">Forgot Password?</button>
+                {/* <button type="button" className="text-xs font-bold text-primary hover:underline">Forgot Password?</button> */}
               </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />

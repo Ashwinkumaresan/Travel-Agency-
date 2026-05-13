@@ -27,7 +27,7 @@ export default function Navbar() {
                   <Compass className="h-6 w-6 text-white" />
                 </div> */}
                 <span className="text-xl md:text-2xl font-display font-semibold whitespace-nowrap">
-                  <span className="text-secondary">Sa Salem Super </span>
+                  <span className="text-secondary">S A Salem Super </span>
                   <span className="text-primary font-[Dancing_Script] px-0.5">Service</span>
                 </span>
               </Link>

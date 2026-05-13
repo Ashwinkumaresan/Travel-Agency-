@@ -1,10 +1,3 @@
-import {StrictMode} from 'react';
-import {createRoot} from 'react-dom/client';
-import App from './App.tsx';
-import './index.css';
-
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+// Legacy entry point — redirects to the SSR-compatible entry-client
+// This file is kept for backward compatibility with any direct imports
+import './entry-client.tsx';

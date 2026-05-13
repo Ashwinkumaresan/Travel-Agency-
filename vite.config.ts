@@ -21,6 +21,13 @@ export default defineConfig(({mode}) => {
       emptyOutDir: true,
       sourcemap: false,
     },
+    ssr: {
+      // Let Vite handle externalization defaults
+      // Use resolve conditions to prefer ESM exports in SSR
+      resolve: {
+        conditions: ['import', 'module', 'browser', 'default'],
+      },
+    },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modify - file watching is disabled to prevent flickering during agent edits.
