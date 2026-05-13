@@ -1,14 +1,14 @@
 import PortalLayout from '@/components/layout/PortalLayout';
 import { MOCK_BOOKINGS, MOCK_ROUTE_MAPPINGS, MOCK_VEHICLES } from '@/constants';
 import { cn, formatCurrency, formatDate } from '@/lib/utils';
-import { useState, useMemo } from 'react';
-import { 
-  Calendar, 
-  MapPin, 
-  Package, 
-  CheckCircle2, 
-  Clock, 
-  Search, 
+import { useState, useMemo, useEffect } from 'react';
+import {
+  Calendar,
+  MapPin,
+  Package,
+  CheckCircle2,
+  Clock,
+  Search,
   Filter,
   ArrowUpRight,
   ArrowDownLeft,
@@ -27,12 +27,14 @@ import { motion, AnimatePresence } from 'motion/react';
 
 export default function DailyReport() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [activeTab, setActiveTab] = useState<'all' | 'in-place' | 'delivered'>('all');
-  const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'to-pay'>('all');
+  const [activeTab, setActiveTab] = useState<'in-place' | 'delivered'>('in-place');
+  const [paymentFilter, setPaymentFilter] = useState<'paid' | 'to-pay'>('to-pay');
   const [searchTerm, setSearchTerm] = useState('');
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState<Booking | null>(null);
   const [selectedPaymentMode, setSelectedPaymentMode] = useState<'Online' | 'Cash'>('Online');
-  
+  const [gettingPersonName, setGettingPersonName] = useState('');
+  const [gettingPersonPh, setGettingPersonPh] = useState('');
+
   // Mocking current staff context
   const staffInfo = {
     name: 'Arun Kumar',
@@ -40,24 +42,61 @@ export default function DailyReport() {
     id: 'STF-001'
   };
 
-  const [bookings, setBookings] = useState<Booking[]>(() => {
-    const saved = localStorage.getItem('voyage_bookings');
-    const initial = saved ? JSON.parse(saved) : MOCK_BOOKINGS;
-    return initial.map((b: any) => {
-      const pickup = b.pickupLocation || 'Chennai';
-      const delivery = b.deliveryLocation || 'Salem';
-      const mapping = MOCK_ROUTE_MAPPINGS.find(m => m.from === pickup && m.to === delivery);
-      
-      return {
-        ...b,
-        status: b.status || 'in-place',
-        pickupLocation: pickup,
-        deliveryLocation: delivery,
-        productDescription: b.productDescription || 'General Goods',
-        vehicleNo: b.vehicleNo || (mapping ? mapping.vehicleNumber : 'Not Assigned')
-      };
-    });
-  });
+  const [bookings, setBookings] = useState<Booking[]>([]);
+
+  const mapBackendStatusToFrontend = (status: string): Booking['status'] => {
+    if (status === 'inplace') return 'in-place';
+    if (status === 'shipping') return 'shipping';
+    if (status === 'delevered') return 'sent'; // Backend spells it 'delevered'
+    return 'in-place';
+  };
+
+  const fetchBookings = async () => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const token = localStorage.getItem('accessToken');
+
+      // Use 'recieved' param as requested for In Place tab
+      const statusParam = activeTab === 'in-place' ? 'recieved' : 'all';
+
+      const response = await fetch(`${apiUrl}couriers/?status=${statusParam}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(data);
+        const mappedData: Booking[] = data.map((c: any) => ({
+          id: c.id.toString(),
+          lrNo: c.lr_number,
+          customerName: c.sender_name,
+          customerEmail: '',
+          customerPhone: c.sender_phone_num,
+          pickupLocation: c.from_location?.name || `Branch ${c.from_location}`,
+          deliveryLocation: c.to_location?.name || `Branch ${c.to_location}`,
+          travelDate: c.created_at ? c.created_at.split('T')[0] : '',
+          travellersCount: 1,
+          totalPrice: parseFloat(c.total) || 0,
+          status: mapBackendStatusToFrontend(c.status),
+          paymentMode: c.payment_mode || 'Cash',
+          paymentStatus: c.payment_status ? c.payment_status.toLowerCase().replace(' ', '-') : 'to-pay',
+          submittedAt: c.created_at,
+          weightKg: parseFloat(c.weight) || 0,
+          vehicleNo: c.vehicle ? (c.vehicle.vehicle_number || c.vehicle) : '',
+          deliveredToCustomer: c.delivered_to_customer
+        }));
+        setBookings(mappedData);
+      }
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchBookings();
+  }, [activeTab]);
 
   const saveBookings = (newBookings: Booking[]) => {
     setBookings(newBookings);
@@ -65,75 +104,70 @@ export default function DailyReport() {
   };
 
   const handleVehicleUpdate = (bookingId: string, vehicleNo: string) => {
-    const updated = bookings.map(b => 
+    const updated = bookings.map(b =>
       b.id === bookingId ? { ...b, vehicleNo } : b
     );
     saveBookings(updated);
     toast.success(`Vehicle updated for ${bookingId}`);
   };
 
-  const handleAction = (id: string, action: string) => {
+  const handleAction = async (id: string, action: string) => {
     const booking = bookings.find(b => b.id === id);
     if (!booking) return;
 
     if (action === 'delivered') {
-      if (booking.paymentStatus === 'to-pay') {
-        setIsPaymentModalOpen(booking);
-        return;
-      }
-      
-      const updated = bookings.map(b => 
-        b.id === id ? { ...b, status: 'delivered' as any, completedAt: new Date().toISOString() } : b
-      );
-      saveBookings(updated);
-      toast.success(`Booking ${id} marked as delivered`);
-    } else {
-      const updated = bookings.map(b => 
-        b.id === id ? { ...b, status: action as any, completedAt: new Date().toISOString() } : b
-      );
-      saveBookings(updated);
+      setIsPaymentModalOpen(booking);
+      setGettingPersonName('');
+      setGettingPersonPh('');
+      return;
     }
   };
 
-  const handlePaymentAndDeliver = (keepToPay = false) => {
+  const handlePaymentAndDeliver = async (keepToPay = false) => {
     if (!isPaymentModalOpen) return;
-    
-    const updated = bookings.map(b => 
-      b.id === isPaymentModalOpen.id 
-        ? { 
-            ...b, 
-            status: 'delivered' as any, 
-            paymentStatus: keepToPay ? 'to-pay' as const : 'paid' as const, 
-            paymentMode: keepToPay ? (b.paymentMode || 'Cash') : selectedPaymentMode,
-            completedAt: new Date().toISOString() 
-          } 
-        : b
-    );
-    saveBookings(updated);
-    if (keepToPay) {
-      toast.success(`Booking ${isPaymentModalOpen.id} updated (To Pay maintained)`);
-    } else {
-      const wasAlreadyDelivered = isPaymentModalOpen.status === 'delivered';
-      toast.success(wasAlreadyDelivered 
-        ? `Payment status updated to Paid (${selectedPaymentMode}) for ${isPaymentModalOpen.id}`
-        : `Payment confirmed via ${selectedPaymentMode} and marked as Delivered`
-      );
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const token = localStorage.getItem('accessToken');
+
+      const isToPay = isPaymentModalOpen.paymentStatus === 'to-pay';
+
+      const response = await fetch(`${apiUrl}couriers/${isPaymentModalOpen.id}/`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          payment_status: isToPay ? 'Paid' : undefined,
+          payment_mode: isToPay ? selectedPaymentMode : undefined,
+          delivered_to_customer: true,
+          getting_person_name: gettingPersonName,
+          getting_person_ph: gettingPersonPh
+        })
+      });
+
+      if (response.ok) {
+        toast.success(`Booking marked as Delivered`);
+        setIsPaymentModalOpen(null);
+        fetchBookings();
+      } else {
+        toast.error('Failed to update delivery status');
+      }
+    } catch (error) {
+      console.error('Error updating booking:', error);
+      toast.error('An error occurred');
     }
-    setIsPaymentModalOpen(null);
   };
 
   const filteredBookings = useMemo(() => {
     return bookings.filter(b => {
-      // ONLY Incoming (Coming FROM other branches TO this login location)
-      const isIncoming = b.deliveryLocation === staffInfo.location;
-      if (!isIncoming) return false;
+      const matchesSearch = b.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        b.customerName.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesSearch = b.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                           b.customerName.toLowerCase().includes(searchTerm.toLowerCase());
-      
       let matchesTab = true;
-      if (activeTab === 'in-place') matchesTab = b.status === 'received' || b.status === 'in-place';
-      if (activeTab === 'delivered') matchesTab = b.status === 'delivered';
+      if (activeTab === 'in-place') matchesTab = !b.deliveredToCustomer;
+      if (activeTab === 'delivered') matchesTab = b.deliveredToCustomer;
 
       let matchesPayment = true;
       if (paymentFilter === 'paid') matchesPayment = b.paymentStatus === 'paid';
@@ -141,17 +175,17 @@ export default function DailyReport() {
 
       return matchesSearch && matchesTab && matchesPayment;
     });
-  }, [bookings, activeTab, paymentFilter, searchTerm, staffInfo.location]);
+  }, [bookings, activeTab, paymentFilter, searchTerm]);
 
   const stats = useMemo(() => {
-    const relevant = bookings.filter(b => b.deliveryLocation === staffInfo.location);
+    const relevant = bookings;
     return {
       total: relevant.length,
-      inPlace: relevant.filter(b => (b.status === 'received' || b.status === 'in-place')).length,
-      delivered: relevant.filter(b => b.status === 'delivered').length,
+      inPlace: relevant.filter(b => !b.deliveredToCustomer).length,
+      delivered: relevant.filter(b => b.deliveredToCustomer).length,
       paid: relevant.filter(b => b.paymentStatus === 'paid').length,
     };
-  }, [bookings, staffInfo.location]);
+  }, [bookings]);
 
   return (
     <PortalLayout role="staff" title="Daily Courier Report">
@@ -163,8 +197,8 @@ export default function DailyReport() {
               <Calendar className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <input 
-                type="date" 
+              <input
+                type="date"
                 className="text-lg font-display font-bold text-secondary bg-transparent border-none p-0 focus:ring-0 cursor-pointer"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
@@ -199,7 +233,6 @@ export default function DailyReport() {
           <div className="flex flex-wrap gap-4 items-center">
             <div className="flex p-1 bg-gray-100 rounded-[4px]">
               {[
-                { id: 'all', label: 'All' },
                 { id: 'in-place', label: 'In Place (Received)' },
                 { id: 'delivered', label: 'Delivered (To Customer)' }
               ].map((tab) => (
@@ -208,8 +241,8 @@ export default function DailyReport() {
                   onClick={() => setActiveTab(tab.id as any)}
                   className={cn(
                     "px-4 py-1.5 text-[10px] font-bold rounded-[4px] transition-all whitespace-nowrap",
-                    activeTab === tab.id 
-                      ? "bg-white text-secondary shadow-sm" 
+                    activeTab === tab.id
+                      ? "bg-white text-secondary shadow-sm"
                       : "text-text-muted hover:text-secondary"
                   )}
                 >
@@ -220,7 +253,6 @@ export default function DailyReport() {
 
             <div className="flex p-1 bg-gray-100 rounded-[4px]">
               {[
-                { id: 'all', label: 'All Payments' },
                 { id: 'paid', label: 'Paid' },
                 { id: 'to-pay', label: 'To Pay' }
               ].map((filter) => (
@@ -229,8 +261,8 @@ export default function DailyReport() {
                   onClick={() => setPaymentFilter(filter.id as any)}
                   className={cn(
                     "px-4 py-1.5 text-[10px] font-bold rounded-[4px] transition-all whitespace-nowrap",
-                    paymentFilter === filter.id 
-                      ? "bg-secondary text-white shadow-sm" 
+                    paymentFilter === filter.id
+                      ? "bg-secondary text-white shadow-sm"
                       : "text-text-muted hover:text-secondary"
                   )}
                 >
@@ -242,9 +274,9 @@ export default function DailyReport() {
 
           <div className="relative w-full md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input 
-              type="text" 
-              placeholder="Search Tracking ID..." 
+            <input
+              type="text"
+              placeholder="Search Tracking ID..."
               className="input-field pl-10 h-10 text-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -274,8 +306,7 @@ export default function DailyReport() {
                   </tr>
                 ) : (
                   filteredBookings.map((booking) => {
-                    const isDest = booking.deliveryLocation === staffInfo.location;
-                    const canDeliver = isDest && (booking.status === 'received' || booking.status === 'in-place');
+                    const canDeliver = !booking.deliveredToCustomer;
                     const isDelivered = booking.status === 'delivered';
 
                     return (
@@ -317,7 +348,7 @@ export default function DailyReport() {
                                   <span className="text-[8px] font-black text-green-600 uppercase tracking-tighter">Delivered</span>
                                 </div>
                                 {booking.paymentStatus === 'to-pay' && (
-                                  <button 
+                                  <button
                                     onClick={() => setIsPaymentModalOpen(booking)}
                                     className="px-3 py-1 bg-primary text-white text-[8px] font-black uppercase rounded-[4px] shadow-md hover:bg-primary/90 transition-all"
                                   >
@@ -326,7 +357,7 @@ export default function DailyReport() {
                                 )}
                               </div>
                             ) : (
-                              <ActionMenu 
+                              <ActionMenu
                                 items={[
                                   {
                                     label: 'Mark as Delivered',
@@ -349,11 +380,11 @@ export default function DailyReport() {
           </div>
         </div>
 
-        {/* Payment Confirmation Modal */}
+        {/* Payment & Delivery Confirmation Modal */}
         <AnimatePresence>
           {isPaymentModalOpen && (
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -361,7 +392,7 @@ export default function DailyReport() {
               >
                 <div className="p-8 pb-4 flex justify-between items-center">
                   <div>
-                    <h2 className="text-xl font-black text-secondary">Collect Payment</h2>
+                    <h2 className="text-xl font-black text-secondary">Confirm Delivery</h2>
                     <p className="text-[10px] font-bold text-text-muted mt-1 uppercase tracking-widest">DR ID: {isPaymentModalOpen.lrNo || isPaymentModalOpen.id}</p>
                   </div>
                   <button onClick={() => setIsPaymentModalOpen(null)} className="p-2 hover:bg-gray-100 rounded-[4px] transition-colors">
@@ -372,7 +403,7 @@ export default function DailyReport() {
                 <div className="p-8 pt-0 space-y-6">
                   <div className="bg-gray-50 p-4 rounded-[8px] flex justify-between items-center border border-gray-100">
                     <div>
-                      <p className="text-[10px] font-bold text-text-muted uppercase">Amount to Collect</p>
+                      <p className="text-[10px] font-bold text-text-muted uppercase">Amount</p>
                       <p className="text-2xl font-black text-primary">{formatCurrency(isPaymentModalOpen.totalPrice)}</p>
                     </div>
                     <div className="text-right">
@@ -381,59 +412,78 @@ export default function DailyReport() {
                     </div>
                   </div>
 
+                  {/* Payment Mode Selector (Only if To Pay) */}
+                  {isPaymentModalOpen.paymentStatus === 'to-pay' && (
+                    <div className="space-y-4">
+                      <p className="text-xs font-bold text-text-muted uppercase text-center">Select Payment Mode</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <button
+                          onClick={() => setSelectedPaymentMode('Online')}
+                          className={cn(
+                            "flex flex-col items-center gap-3 p-4 border rounded-[8px] transition-all font-bold text-sm relative",
+                            selectedPaymentMode === 'Online'
+                              ? "border-primary bg-primary/5 text-secondary shadow-sm"
+                              : "border-gray-100 bg-white text-text-muted hover:border-gray-200"
+                          )}
+                        >
+                          {selectedPaymentMode === 'Online' && <Check className="h-4 w-4 absolute top-3 right-3 text-primary" />}
+                          <CreditCard className={cn("h-6 w-6", selectedPaymentMode === 'Online' ? "text-primary" : "text-gray-400")} /> Online/UPI
+                        </button>
+                        <button
+                          onClick={() => setSelectedPaymentMode('Cash')}
+                          className={cn(
+                            "flex flex-col items-center gap-3 p-4 border rounded-[8px] transition-all font-bold text-sm relative",
+                            selectedPaymentMode === 'Cash'
+                              ? "border-primary bg-primary/5 text-secondary shadow-sm"
+                              : "border-gray-100 bg-white text-text-muted hover:border-gray-200"
+                          )}
+                        >
+                          {selectedPaymentMode === 'Cash' && <Check className="h-4 w-4 absolute top-3 right-3 text-primary" />}
+                          <Wallet className={cn("h-6 w-6", selectedPaymentMode === 'Cash' ? "text-primary" : "text-gray-400")} /> Cash Point
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Name and Phone No Inputs */}
                   <div className="space-y-4">
-                    <p className="text-xs font-bold text-text-muted uppercase text-center">Select Payment Mode</p>
-                    <div className="grid grid-cols-2 gap-4">
-                      <button 
-                        onClick={() => setSelectedPaymentMode('Online')}
-                        className={cn(
-                          "flex flex-col items-center gap-3 p-4 border rounded-[8px] transition-all font-bold text-sm relative",
-                          selectedPaymentMode === 'Online' 
-                            ? "border-primary bg-primary/5 text-secondary shadow-sm" 
-                            : "border-gray-100 bg-white text-text-muted hover:border-gray-200"
-                        )}
-                      >
-                        {selectedPaymentMode === 'Online' && <Check className="h-4 w-4 absolute top-3 right-3 text-primary" />}
-                        <CreditCard className={cn("h-6 w-6", selectedPaymentMode === 'Online' ? "text-primary" : "text-gray-400")} /> Online/UPI
-                      </button>
-                      <button 
-                        onClick={() => setSelectedPaymentMode('Cash')}
-                        className={cn(
-                          "flex flex-col items-center gap-3 p-4 border rounded-[8px] transition-all font-bold text-sm relative",
-                          selectedPaymentMode === 'Cash' 
-                            ? "border-primary bg-primary/5 text-secondary shadow-sm" 
-                            : "border-gray-100 bg-white text-text-muted hover:border-gray-200"
-                        )}
-                      >
-                        {selectedPaymentMode === 'Cash' && <Check className="h-4 w-4 absolute top-3 right-3 text-primary" />}
-                        <Wallet className={cn("h-6 w-6", selectedPaymentMode === 'Cash' ? "text-primary" : "text-gray-400")} /> Cash Point
-                      </button>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-text-muted uppercase">Name</label>
+                      <input 
+                        type="text"
+                        placeholder="Receiver's Name"
+                        className="w-full bg-white border border-gray-100 rounded-[4px] p-3 text-xs font-bold focus:ring-1 focus:ring-primary/20 transition-all text-black"
+                        value={gettingPersonName}
+                        onChange={(e) => setGettingPersonName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-text-muted uppercase">Phone No</label>
+                      <input 
+                        type="text"
+                        placeholder="Receiver's Phone"
+                        className="w-full bg-white border border-gray-100 rounded-[4px] p-3 text-xs font-bold focus:ring-1 focus:ring-primary/20 transition-all text-black"
+                        value={gettingPersonPh}
+                        onChange={(e) => setGettingPersonPh(e.target.value)}
+                      />
                     </div>
                   </div>
 
                   <div className="pt-4 flex flex-col gap-3">
                     <div className="flex gap-3">
-                      <button 
+                      <button
                         onClick={() => setIsPaymentModalOpen(null)}
                         className="flex-1 py-4 px-6 rounded-[8px] font-black text-xs text-text-muted hover:bg-gray-100 transition-all border border-gray-100"
                       >
                         Cancel
                       </button>
-                      <button 
+                      <button
                         onClick={() => handlePaymentAndDeliver(false)}
                         className="flex-[2] py-4 px-6 bg-primary text-white rounded-[8px] font-black text-xs shadow-xl shadow-primary/20 flex items-center justify-center gap-2"
                       >
-                        {isPaymentModalOpen.status === 'delivered' ? 'Confirm Payment' : 'Confirm & Pay'}
+                        {isPaymentModalOpen.paymentStatus === 'to-pay' ? 'Confirm & Pay' : 'Confirm Delivery'}
                       </button>
                     </div>
-                    {isPaymentModalOpen.status !== 'delivered' && (
-                      <button 
-                        onClick={() => handlePaymentAndDeliver(true)}
-                        className="w-full py-4 px-6 bg-secondary/10 text-secondary border border-secondary/20 rounded-[8px] font-black text-xs hover:bg-secondary/20 transition-all flex items-center justify-center gap-2"
-                      >
-                        <Clock className="h-4 w-4" /> Deliver (Keep To Pay)
-                      </button>
-                    )}
                   </div>
                 </div>
               </motion.div>

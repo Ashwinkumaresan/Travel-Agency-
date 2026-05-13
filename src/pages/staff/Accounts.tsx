@@ -15,27 +15,14 @@ import {
   TrendingUp,
   Filter
 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
 
-const COMMON_REASONS = [
-  "Fuel",
-  "Driver Salary",
-  "Vehicle Maintenance",
-  "Toll Charges",
-  "Parking Fees",
-  "Loading Charges",
-  "Unloading Charges",
-  "Permits & Documentation",
-  "Insurance Premium",
-  "Vehicle Repairs",
-  "Cleaning & Washing",
-  "Office Supplies",
-  "Utilities (Electricity/Water)",
-  "Communication (Phone/Data)",
-  "Inter-branch Transfer",
-  "Others"
-];
+interface ReasonItem {
+  id: number;
+  name: string;
+}
 
 interface ExpenseEntry {
   id: string;
@@ -46,9 +33,11 @@ interface ExpenseEntry {
 }
 
 export default function Accounts() {
-  const [revenue, setRevenue] = useState(50000); // Default daily revenue for demo
+  const [revenue, setRevenue] = useState(0);
   const [expenseList, setExpenseList] = useState<ExpenseEntry[]>([]);
+  const [reasons, setReasons] = useState<ReasonItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedReasonId, setSelectedReasonId] = useState<number | null>(null);
   const [otherReason, setOtherReason] = useState("");
   const [amount, setAmount] = useState("");
   const [categorySearch, setCategorySearch] = useState("");
@@ -56,36 +45,129 @@ export default function Accounts() {
   const [isMobileAddOpen, setIsMobileAddOpen] = useState(false);
 
   const filteredCategories = useMemo(() => {
-    return COMMON_REASONS.filter(cat => 
+    return reasons.map(r => r.name).filter(cat => 
       cat.toLowerCase().includes(categorySearch.toLowerCase())
     );
-  }, [categorySearch]);
+  }, [reasons, categorySearch]);
+  useEffect(() => {
+    fetchReasons();
+    fetchAccount();
+    fetchExpenses();
+  }, []);
 
+  const fetchReasons = async () => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const token = localStorage.getItem('accessToken');
+      const res = await fetch(`${apiUrl}reasons/`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setReasons(data);
+      }
+    } catch (error) {
+      console.error('Error fetching reasons:', error);
+    }
+  };
+
+  const fetchAccount = async () => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const token = localStorage.getItem('accessToken');
+      const res = await fetch(`${apiUrl}account/`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setRevenue(data.revenue);
+      }
+    } catch (error) {
+      console.error('Error fetching account:', error);
+    }
+  };
+
+  const fetchExpenses = async () => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const token = localStorage.getItem('accessToken');
+      const res = await fetch(`${apiUrl}expenses/`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const mapped: ExpenseEntry[] = data.map((e: any) => ({
+          id: e.id.toString(),
+          category: e.reason_name,
+          otherReason: e.text,
+          amount: e.amount,
+          timestamp: e.created_at
+        }));
+        setExpenseList(mapped);
+      }
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
+    }
+  };
   const totalExpenses = useMemo(() => {
     return expenseList.reduce((sum, item) => sum + item.amount, 0);
   }, [expenseList]);
 
   const balance = revenue - totalExpenses;
 
-  const handleAddExpense = () => {
+  const handleAddExpense = async () => {
     if (!selectedCategory || !amount) return;
     
-    const newExpense: ExpenseEntry = {
-      id: Math.random().toString(36).substr(2, 9),
-      category: selectedCategory,
-      otherReason: selectedCategory === "Others" ? otherReason : undefined,
-      amount: parseFloat(amount),
-      timestamp: new Date().toISOString()
-    };
-
-    setExpenseList(prev => [newExpense, ...prev]);
+    let reasonId = selectedReasonId;
+    let text = null;
     
-    // Reset form
-    setSelectedCategory("");
-    setOtherReason("");
-    setAmount("");
-    setCategorySearch("");
-    setIsMobileAddOpen(false);
+    if (selectedCategory === "Others") {
+      const otherReasonObj = reasons.find(r => r.name === "Others");
+      reasonId = otherReasonObj ? otherReasonObj.id : null;
+      text = otherReason;
+    }
+    
+    if (!reasonId) {
+      toast.error("Please select a valid reason");
+      return;
+    }
+    
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const token = localStorage.getItem('accessToken');
+      
+      const response = await fetch(`${apiUrl}expenses/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          reason: reasonId,
+          text: text,
+          amount: parseFloat(amount)
+        })
+      });
+      
+      if (response.ok) {
+        toast.success("Expense added successfully");
+        // Reset form
+        setSelectedCategory("");
+        setSelectedReasonId(null);
+        setOtherReason("");
+        setAmount("");
+        setCategorySearch("");
+        setIsMobileAddOpen(false);
+        // Refresh data
+        fetchExpenses();
+        fetchAccount();
+      } else {
+        toast.error("Failed to add expense");
+      }
+    } catch (error) {
+      console.error('Error adding expense:', error);
+      toast.error("An error occurred");
+    }
   };
 
   const removeExpense = (id: string) => {
@@ -149,6 +231,8 @@ export default function Accounts() {
                             key={cat}
                             onClick={() => {
                               setSelectedCategory(cat);
+                              const reason = reasons.find(r => r.name === cat);
+                              setSelectedReasonId(reason ? reason.id : null);
                               setShowCategoryDropdown(false);
                             }}
                             className={cn(
@@ -411,6 +495,8 @@ export default function Accounts() {
                                   key={cat}
                                   onClick={() => {
                                     setSelectedCategory(cat);
+                                    const reason = reasons.find(r => r.name === cat);
+                                    setSelectedReasonId(reason ? reason.id : null);
                                     setShowCategoryDropdown(false);
                                   }}
                                   className={cn(

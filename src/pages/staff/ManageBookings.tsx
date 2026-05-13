@@ -188,7 +188,7 @@ export default function ManageBookings() {
       if (nextStatus === 'shipping') {
         endpoint = `${apiUrl}couriers/${bookingId}/mark-shipping/`;
       } else if (nextStatus === 'sent' || nextStatus === 'received') {
-        endpoint = `${apiUrl}couriers/${bookingId}/mark-delivered/`;
+        endpoint = `${apiUrl}couriers/${bookingId}/mark-delevered/`;
       }
       
       if (!endpoint) {

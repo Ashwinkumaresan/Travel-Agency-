@@ -13,21 +13,114 @@ import { toast, Toaster } from 'sonner';
 
 export default function GDMManagement() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'all' | 'unshipped' | 'shipped'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'inplace' | 'shipping' | 'sent'>('all');
+  const [loading, setLoading] = useState(true);
   
-  // Initialize from localStorage + MOCK
-  const [gdms, setGdms] = useState<GDM[]>(() => {
-    const saved = localStorage.getItem('voyage_gdms');
-    return saved ? JSON.parse(saved) : MOCK_GDMS;
-  });
-
-  const [bookings, setBookings] = useState<Booking[]>(() => {
-    const saved = localStorage.getItem('voyage_bookings');
-    return saved ? JSON.parse(saved) : MOCK_BOOKINGS;
-  });
+  const [gdms, setGdms] = useState<GDM[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
 
   const [selectedGDM, setSelectedGDM] = useState<GDM | null>(null);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+
+  const mapBackendStatusToFrontend = (status: string): Booking['status'] => {
+    if (status === 'inplace') return 'in-place';
+    if (status === 'shipping') return 'shipping';
+    if (status === 'delevered') return 'sent'; // Backend spells it 'delevered'
+    return 'in-place';
+  };
+
+  const fetchBookings = async () => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const token = localStorage.getItem('accessToken');
+      
+      const response = await fetch(`${apiUrl}couriers/?status=all`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const mappedData: Booking[] = data.map((c: any) => ({
+          id: c.id.toString(),
+          lrNo: c.lr_number,
+          customerName: c.sender_name,
+          customerEmail: '',
+          customerPhone: c.sender_phone_num,
+          pickupLocation: c.from_location?.name || `Branch ${c.from_location}`,
+          deliveryLocation: c.to_location?.name || `Branch ${c.to_location}`,
+          travelDate: c.created_at ? c.created_at.split('T')[0] : '',
+          travellersCount: 1,
+          totalPrice: parseFloat(c.total) || 0,
+          status: mapBackendStatusToFrontend(c.status),
+          paymentMode: c.payment_mode || 'Cash',
+          paymentStatus: c.payment_status || 'to-pay',
+          submittedAt: c.created_at,
+          weightKg: parseFloat(c.weight) || 0,
+          vehicleNo: c.vehicle ? (c.vehicle.vehicle_number || c.vehicle) : ''
+        }));
+        setBookings(mappedData);
+        return mappedData;
+      }
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+    }
+    return [];
+  };
+
+  const fetchGDMs = async (bookingsData: Booking[]) => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const token = localStorage.getItem('accessToken');
+      
+      const response = await fetch(`${apiUrl}gdms/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const mappedData: GDM[] = data.map((g: any) => {
+          const lrIds = g.couriers.map((id: any) => id.toString());
+          const gdmBookings = bookingsData.filter(b => lrIds.includes(b.id));
+          
+          return {
+            id: g.id.toString(),
+            gdmNo: g.gdm_number,
+            vehicleNo: g.vehicle_number,
+            driverName: g.driver?.user_name || g.driver_name || 'No Driver',
+            driverPhone: g.driver?.phone_number || g.driver_phone_num || '',
+            route: g.route ? `${g.route.from_location?.name} → ${g.route.to_location?.name}` : 'No Route',
+            totalLRCount: g.total_couriers_count || 0,
+            totalPackages: g.total_couriers_count || 0, // Simplified
+            totalWeight: parseFloat(g.total_weights) || 0,
+            totalFreight: parseFloat(g.total_price) || 0,
+            paidCount: gdmBookings.filter(b => b.paymentStatus === 'paid').length,
+            toPayCount: gdmBookings.filter(b => b.paymentStatus !== 'paid').length,
+            dispatchDate: g.dispatch_date,
+            status: g.status,
+            lrIds: lrIds
+          };
+        });
+        setGdms(mappedData);
+      }
+    } catch (error) {
+      console.error('Error fetching GDMs:', error);
+      toast.error('Failed to fetch GDMs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    const init = async () => {
+      const bData = await fetchBookings();
+      await fetchGDMs(bData);
+    };
+    init();
+  }, []);
 
   const filteredGDMs = useMemo(() => {
     return gdms.filter(gdm => {
@@ -38,82 +131,134 @@ export default function GDMManagement() {
       
       const matchesTab = 
         activeTab === 'all' || 
-        (activeTab === 'unshipped' && gdm.status !== 'dispatched') ||
-        (activeTab === 'shipped' && gdm.status === 'dispatched');
+        (activeTab === 'inplace' && (gdm.status === 'unshipped' || gdm.status === 'generated')) ||
+        (activeTab === 'shipping' && (gdm.status === 'dispatched' || gdm.status === 'shipping')) ||
+        (activeTab === 'sent' && gdm.status === 'sent');
 
       return matchesSearch && matchesTab;
     });
   }, [searchTerm, gdms, activeTab]);
 
-  const handleDeleteGDM = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    const updated = gdms.filter(gdm => gdm.id !== id);
-    setGdms(updated);
-    localStorage.setItem('voyage_gdms', JSON.stringify(updated));
-    toast.error('GDM deleted successfully');
-  };
-
-  const handleDispatchGDM = (e: React.MouseEvent, gdm: GDM) => {
+  const handleDeleteGDM = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     
-    // Update GDMs
-    const updatedGdms = gdms.map(item => 
-      item.id === gdm.id ? { ...item, status: 'dispatched' as const } : item
-    );
-    setGdms(updatedGdms);
-    localStorage.setItem('voyage_gdms', JSON.stringify(updatedGdms));
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const token = localStorage.getItem('accessToken');
 
-    // Sync Booking Statuses
-    const updatedBookings = bookings.map(b => 
-      gdm.lrIds.includes(b.id) ? { ...b, status: 'shipping' as const } : b
-    );
-    setBookings(updatedBookings);
-    localStorage.setItem('voyage_bookings', JSON.stringify(updatedBookings));
+      const response = await fetch(`${apiUrl}gdms/${id}/`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
 
-    toast.success(`All ${gdm.totalLRCount} bookings marked as Shipped under ${gdm.gdmNo}`);
+      if (response.ok) {
+        toast.error('GDM deleted successfully');
+        const bData = await fetchBookings();
+        await fetchGDMs(bData);
+      } else {
+        toast.error('Failed to delete GDM');
+      }
+    } catch (error) {
+      console.error('Error deleting GDM:', error);
+      toast.error('An error occurred while deleting GDM');
+    }
   };
 
-  const handleDeleteLRFromGDM = (lrId: string) => {
+  const handleDispatchGDM = async (e: React.MouseEvent, gdm: GDM) => {
+    e.stopPropagation();
+    
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const token = localStorage.getItem('accessToken');
+
+      const response = await fetch(`${apiUrl}couriers/bulk-mark-shipping/`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          courier_ids: gdm.lrIds.map(id => parseInt(id))
+        })
+      });
+
+      if (response.ok) {
+        toast.success(`All ${gdm.totalLRCount} bookings marked as Shipped under ${gdm.gdmNo}`);
+        const bData = await fetchBookings();
+        await fetchGDMs(bData);
+      } else {
+        const errorData = await response.json();
+        toast.error(`Error: ${errorData.error || 'Failed to dispatch GDM'}`);
+      }
+    } catch (error) {
+      console.error('Error dispatching GDM:', error);
+      toast.error('An error occurred while dispatching GDM');
+    }
+  };
+
+  const handleDeleteLRFromGDM = async (lrId: string) => {
     if (!selectedGDM) return;
 
     const lrToRemove = bookings.find(b => b.id === lrId);
     if (!lrToRemove) return;
 
-    // 1. Update GDM lrIds and statistics
-    const updatedGdms = gdms.map(gdm => {
-      if (gdm.id === selectedGDM.id) {
-        const newLrIds = gdm.lrIds.filter(id => id !== lrId);
-        return {
-          ...gdm,
-          lrIds: newLrIds,
-          totalLRCount: newLrIds.length,
-          totalWeight: Math.max(0, gdm.totalWeight - (lrToRemove.weightKg || 0)),
-          totalPackages: Math.max(0, gdm.totalPackages - (lrToRemove.travellersCount || 1)),
-          totalFreight: Math.max(0, gdm.totalFreight - lrToRemove.totalPrice),
-          paidCount: lrToRemove.paymentStatus === 'paid' ? Math.max(0, gdm.paidCount - 1) : gdm.paidCount,
-          toPayCount: lrToRemove.paymentStatus === 'to-pay' ? Math.max(0, gdm.toPayCount - 1) : gdm.toPayCount,
-        };
+    const newLrIds = selectedGDM.lrIds.filter(id => id !== lrId);
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const token = localStorage.getItem('accessToken');
+
+      const response = await fetch(`${apiUrl}gdms/${selectedGDM.id}/`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          couriers: newLrIds.map(id => parseInt(id))
+        })
+      });
+
+      if (response.ok) {
+        toast.error(`LR ${lrToRemove.lrNo} removed from GDM`);
+        const bData = await fetchBookings();
+        await fetchGDMs(bData);
+        
+        // Update selectedGDM state for immediate UI update
+        const freshGDMResponse = await fetch(`${apiUrl}gdms/${selectedGDM.id}/`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (freshGDMResponse.ok) {
+          const freshGDMData = await freshGDMResponse.json();
+          // Map it to frontend GDM type
+          const mappedGDM: GDM = {
+            id: freshGDMData.id.toString(),
+            gdmNo: freshGDMData.gdm_number,
+            vehicleNo: freshGDMData.vehicle_number,
+            driverName: freshGDMData.driver?.user_name || freshGDMData.driver_name || 'No Driver',
+            driverPhone: freshGDMData.driver?.phone_number || freshGDMData.driver_phone_num || '',
+            route: freshGDMData.route ? `${freshGDMData.route.from_location?.name} → ${freshGDMData.route.to_location?.name}` : 'No Route',
+            totalLRCount: freshGDMData.total_couriers_count || 0,
+            totalPackages: freshGDMData.total_couriers_count || 0,
+            totalWeight: parseFloat(freshGDMData.total_weights) || 0,
+            totalFreight: parseFloat(freshGDMData.total_price) || 0,
+            paidCount: bData.filter(b => freshGDMData.couriers.includes(parseInt(b.id)) && b.paymentStatus === 'paid').length,
+            toPayCount: bData.filter(b => freshGDMData.couriers.includes(parseInt(b.id)) && b.paymentStatus !== 'paid').length,
+            dispatchDate: freshGDMData.dispatch_date,
+            status: freshGDMData.status,
+            lrIds: freshGDMData.couriers.map((id: any) => id.toString())
+          };
+          setSelectedGDM(mappedGDM);
+        }
+      } else {
+        toast.error('Failed to remove LR from GDM');
       }
-      return gdm;
-    });
-
-    setGdms(updatedGdms);
-    localStorage.setItem('voyage_gdms', JSON.stringify(updatedGdms));
-
-    // 2. Update selectedGDM state for immediate UI update
-    const updatedSelectedGDM = updatedGdms.find(g => g.id === selectedGDM.id);
-    if (updatedSelectedGDM) {
-      setSelectedGDM(updatedSelectedGDM);
+    } catch (error) {
+      console.error('Error removing LR from GDM:', error);
+      toast.error('An error occurred while removing LR from GDM');
     }
-
-    // 3. Reset booking vehicle info and status
-    const updatedBookings = bookings.map(b => 
-      b.id === lrId ? { ...b, vehicleNo: undefined, status: 'in-place' as any } : b
-    );
-    setBookings(updatedBookings);
-    localStorage.setItem('voyage_bookings', JSON.stringify(updatedBookings));
-
-    toast.error(`LR ${lrToRemove.lrNo} removed from GDM`);
   };
 
   const getGdmBookings = (gdm: GDM): Booking[] => {
@@ -147,7 +292,7 @@ export default function GDMManagement() {
             </div>
             
             <div className="hidden md:flex items-center bg-gray-100/50 p-1 rounded-[4px] border border-gray-200">
-              {(['all', 'unshipped', 'shipped'] as const).map((tab) => (
+              {(['all', 'inplace', 'shipping', 'sent'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
