@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import PortalHeader from './PortalHeader';
 import { UserRole } from '@/types';
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface PortalLayoutProps {
@@ -14,10 +15,12 @@ export default function PortalLayout({ children, role, title }: PortalLayoutProp
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  const location = useLocation();
+
   // Close sidebar on mobile when route changes
   useEffect(() => {
     setIsSidebarOpen(false);
-  }, [window.location.pathname]);
+  }, [location.pathname]);
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">

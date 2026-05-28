@@ -109,7 +109,7 @@ export default function Login() {
           </div>
 
           {/* Role Selector */}
-          {/* <div className="flex p-1 bg-gray-100 rounded-md mb-6">
+          <div className="flex p-1 bg-gray-100 rounded-md mb-6">
             {(['customer', 'staff', 'admin'] as LoginRole[]).map((r) => (
               <button
                 key={r}
@@ -124,7 +124,7 @@ export default function Login() {
                 {r}
               </button>
             ))}
-          </div> */}
+          </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-1.5">

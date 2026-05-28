@@ -1,4 +1,5 @@
 import PortalLayout from '@/components/layout/PortalLayout';
+import { useLocation } from 'react-router-dom';
 import { 
   Calendar as CalendarIcon, 
   ChevronLeft, 
@@ -135,7 +136,8 @@ export default function DetailedMetrics() {
     }
   };
 
-  const role = window.location.pathname.includes('admin') ? 'admin' : 'staff';
+  const location = useLocation();
+  const role = location.pathname.includes('admin') ? 'admin' : 'staff';
 
   return (
     <PortalLayout role={role} title="Analytics Metrics">

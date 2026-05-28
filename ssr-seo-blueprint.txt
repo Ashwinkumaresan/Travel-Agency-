@@ -1,0 +1,62 @@
+**Objective:** 
+Convert a standard client-side rendered (CSR) React + Vite Single Page Application (SPA) into a Pre-rendered Static Site (SSG) with full Server-Side Rendering (SSR) capabilities at build time. The goal is perfect SEO, fast loading, and seamless deployment to Vercel without needing a runtime server or serverless functions.
+
+**Architecture Summary:**
+- Framework: React + Vite + React Router v7
+- Approach: Build-time Pre-rendering (SSG). We will build the client, build the server, and then run a script to render all public routes into static HTML files.
+- Deployment: Vercel (Static SPA with pre-rendered HTML files).
+
+Please implement the following steps in order:
+
+### 1. Update `index.html`
+- Move `index.html` to the root (if not already) or keep it where Vite expects it.
+- Add comprehensive SEO meta tags (title, description, keywords, canonical, Open Graph, Twitter Cards).
+- Add placeholders for SSR injection: `<!--app-head-->` inside `<head>` and `<div id="root"><!--app-html--></div>` inside `<body>`.
+- Point the script tag to the new client entry: `<script type="module" src="/src/entry-client.tsx"></script>`.
+
+### 2. Create Entry Points
+- **Create `src/entry-client.tsx`:** 
+  Use `hydrateRoot` to hydrate the pre-rendered HTML. Check if `document.getElementById('root')?.innerHTML` is empty; if so, fallback to `createRoot` (for dev mode). Wrap the app in `<BrowserRouter>`.
+- **Create `src/entry-server.tsx`:** 
+  Export a `render(url)` function. Use `renderToString` from `react-dom/server` and wrap the `<App />` in `<StaticRouter location={url}>` (import from `react-router-dom`).
+  Include a mechanism (like a `SEO_DATA` dictionary) to inject route-specific `<title>`, `<meta>`, and JSON-LD structured data into the `head` array. Return `{ html, head }`.
+
+### 3. Refactor App Routing
+- Modify `src/App.tsx`. Remove the `<BrowserRouter>` wrapper from here (since it's now handled by the entry points).
+- If there are heavy animations (like Framer Motion) or splash screens that rely on client-side APIs (like `window` or `document`), wrap them in an `isServer` check (e.g., `typeof window === 'undefined'`) to prevent hydration mismatches.
+
+### 4. Setup Build & Pre-render Scripts
+- Install dependencies: `npm install compression sirv cross-env` and `npm install -D @types/express` (if testing locally).
+- **Create `scripts/prerender.mjs`:** 
+  Write a Node.js script that reads `dist/client/index.html`, imports the server bundle from `dist/server/entry-server.js`, iterates over an array of public routes (e.g., `['/', '/about', '/contact']`), calls the `render(route)` function, replaces the `<!--app-head-->` and `<!--app-html-->` placeholders, and writes the resulting HTML to `dist/client/[route]/index.html`.
+
+### 5. Update Configurations
+- **`vite.config.ts`:** Add `ssr: { resolve: { conditions: ['import', 'module', 'browser', 'default'] } }` to prevent CommonJS/ESM "module is not defined" errors during the SSR build.
+- **`package.json`:** Add the following scripts:
+  - `"build:client": "vite build --outDir dist/client"`
+  - `"build:server": "vite build --outDir dist/server --ssr src/entry-server.tsx"`
+  - `"prerender": "node scripts/prerender.mjs"`
+  - `"build": "npm run build:client && npm run build:server && npm run prerender"`
+- **`vercel.json`:** Create/update this file in the root to serve the static files and handle SPA fallback:
+  ```json
+  {
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist/client",
+    "headers": [
+      { "source": "/sitemap.xml", "headers": [{ "key": "Content-Type", "value": "application/xml" }] },
+      { "source": "/robots.txt", "headers": [{ "key": "Content-Type", "value": "text/plain" }] }
+    ],
+    "rewrites": [
+      { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
+      { "source": "/robots.txt", "destination": "/robots.txt" },
+      { "source": "/(.*)", "destination": "/index.html" }
+    ]
+  }
+  ```
+
+### 6. Search Engine Optimization (SEO) Files
+- **Create `public/sitemap.xml`:** Include the exact deployment URLs of all public pages.
+- **Create `public/robots.txt`:** Allow crawling (`User-agent: *`, `Allow: /`), disallow private routes (`Disallow: /admin/`, etc.), and link to the `sitemap.xml`.
+
+**Verification:**
+After running `npm run build`, the `dist/client` folder should contain folders for each route (e.g., `/about/index.html`), and opening those HTML files should reveal fully populated tags and HTML content inside `<div id="root">`, rather than an empty div.

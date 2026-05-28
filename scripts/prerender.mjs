@@ -22,6 +22,10 @@ async function prerender() {
   // Read the client HTML template
   const template = fs.readFileSync(path.join(clientDir, 'index.html'), 'utf-8');
 
+  // Save a copy of the raw empty SPA template for dynamic fallback routes
+  // so that routes like /app/dashboard don't hydrate over the homepage HTML
+  fs.writeFileSync(path.join(clientDir, 'spa-fallback.html'), template);
+
   // Import the SSR render function from the server build
   const { render } = await import('../dist/server/entry-server.js');
 

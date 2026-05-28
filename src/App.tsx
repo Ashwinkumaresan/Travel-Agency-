@@ -9,7 +9,9 @@ import { AnimatePresence, motion } from 'motion/react';
 import Home from './pages/public/Home';
 import About from './pages/public/About';
 import Contact from './pages/public/Contact';
-import Login from './pages/auth/Login';
+import Login from './pages/auth/CustomerLogin';
+import StaffLogin from './pages/auth/StaffLogin';
+import AdminLogin from './pages/auth/AdminLogin';
 import Register from './pages/auth/Register';
 import CustomerDashboard from './pages/customer/Dashboard';
 import Bookings from './pages/customer/Bookings';
@@ -83,6 +85,8 @@ export default function App() {
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/staff/login" element={<StaffLogin />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/register" element={<Register />} />
             
             {/* Portal routes */}
@@ -129,6 +133,8 @@ export default function App() {
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/staff/login" element={<StaffLogin />} />
+              <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/register" element={<Register />} />
               
               {/* Portal routes */}

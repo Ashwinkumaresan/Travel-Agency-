@@ -50,13 +50,9 @@ const NAV_ITEMS = {
   ],
   admin: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
-    { label: 'Accounts & Staff', icon: Calculator, path: '/admin/accounts' },
+    { label: 'Staff Management', icon: Users, path: '/admin/accounts' },
     { label: 'Drivers', icon: User, path: '/admin/drivers' },
     { label: 'Vehicles', icon: Truck, path: '/admin/vehicles' },
-    { label: 'Operational Reports', icon: FileText, path: '/admin/reports' },
-    { label: 'Booking Overview', icon: Briefcase, path: '/admin/bookings' },
-    { label: 'Packages', icon: Package, path: '/admin/packages' },
-    { label: 'Settings', icon: Settings, path: '/admin/settings' },
   ]
 };
 
