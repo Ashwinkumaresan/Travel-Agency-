@@ -8,15 +8,13 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           <div className="col-span-1 md:col-span-1">
             <Link to="/" className="flex items-center gap-2 mb-6">
-              <div className="bg-primary p-2 rounded-lg">
-                <Compass className="h-6 w-6 text-white" />
-              </div>
-              <span className="text-2xl font-display font-bold text-white tracking-tight">
-                Voyage<span className="text-primary">Arc</span>
+              <span className="text-2xl font-display font-bold tracking-tight">
+                <span className="text-white">S A Salem Super </span>
+                <span className="text-primary font-[Dancing_Script] px-0.5">Service</span>
               </span>
             </Link>
             <p className="text-gray-400 text-sm leading-relaxed">
-              Your trusted partner for unforgettable travel experiences. We craft journeys that stay with you forever.
+              Your trusted partner for reliable logistics and cargo services. We deliver efficiency at every mile.
             </p>
           </div>
 
@@ -54,7 +52,7 @@ export default function Footer() {
 
         <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-gray-500 text-xs">
-            © {new Date().getFullYear()} VoyageArc Travel Agency. All rights reserved.
+            © {new Date().getFullYear()} S A Salem Super Service. All rights reserved.
           </p>
           <div className="flex gap-6">
             <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" className="h-4 opacity-50 grayscale hover:grayscale-0 transition-all" />

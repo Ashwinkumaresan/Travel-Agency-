@@ -12,7 +12,7 @@ export default function Contact() {
           <div className="max-w-4xl mx-auto">
             <h1 className="text-5xl font-display font-bold mb-6">Contact Us</h1>
             <p className="text-gray-400 text-lg">
-              Have questions? We are here to help you plan your next dream vacation.
+              Have questions? We are here to help you with your logistics and parcel shipping.
             </p>
           </div>
         </section>
@@ -63,7 +63,7 @@ export default function Contact() {
                     </div>
                     <div>
                       <h4 className="font-bold text-secondary">Office Address</h4>
-                      <p className="text-text-muted text-sm">123 Adventure Lane, Travel City, TC 10101</p>
+                      <p className="text-text-muted text-sm">No.160, East Main Road, Mettur Dam, Salem - 636401</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-4">
@@ -72,7 +72,7 @@ export default function Contact() {
                     </div>
                     <div>
                       <h4 className="font-bold text-secondary">Phone Number</h4>
-                      <p className="text-text-muted text-sm">+1 (555) 123-4567</p>
+                      <p className="text-text-muted text-sm">+91 94433 12370 / 04298-297784</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-4">
@@ -81,7 +81,7 @@ export default function Contact() {
                     </div>
                     <div>
                       <h4 className="font-bold text-secondary">Email Address</h4>
-                      <p className="text-text-muted text-sm">support@voyagearc.com</p>
+                      <p className="text-text-muted text-sm">support@sasalemsuperservice.com</p>
                     </div>
                   </div>
                 </div>
@@ -90,7 +90,7 @@ export default function Contact() {
               <div className="bg-secondary p-8 rounded-lg text-white relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full -mr-16 -mt-16 blur-2xl" />
                 <h3 className="text-xl font-display font-bold mb-4">Live Support</h3>
-                <p className="text-gray-400 text-sm mb-6">Our team is available 24/7 to assist you with your travel plans.</p>
+                <p className="text-gray-400 text-sm mb-6">Our team is available 24/7 to assist you with your booking and delivery updates.</p>
                 <button className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-md font-bold flex items-center gap-2 transition-all">
                   <MessageSquare className="h-5 w-5" /> Chat on WhatsApp
                 </button>

@@ -43,21 +43,35 @@ export default function Accounts() {
   const [categorySearch, setCategorySearch] = useState("");
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [isMobileAddOpen, setIsMobileAddOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const filteredCategories = useMemo(() => {
     return reasons.map(r => r.name).filter(cat => 
       cat.toLowerCase().includes(categorySearch.toLowerCase())
     );
   }, [reasons, categorySearch]);
+
   useEffect(() => {
-    fetchReasons();
-    fetchAccount();
-    fetchExpenses();
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        await Promise.all([
+          fetchReasons(),
+          fetchAccount(),
+          fetchExpenses()
+        ]);
+      } catch (error) {
+        console.error('Error loading account data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
   }, []);
 
   const fetchReasons = async () => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
       const token = localStorage.getItem('accessToken');
       const res = await fetch(`${apiUrl}reasons/`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -73,7 +87,7 @@ export default function Accounts() {
 
   const fetchAccount = async () => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
       const token = localStorage.getItem('accessToken');
       const res = await fetch(`${apiUrl}account/`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -89,7 +103,7 @@ export default function Accounts() {
 
   const fetchExpenses = async () => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
       const token = localStorage.getItem('accessToken');
       const res = await fetch(`${apiUrl}expenses/`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -133,7 +147,7 @@ export default function Accounts() {
     }
     
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
       const token = localStorage.getItem('accessToken');
       
       const response = await fetch(`${apiUrl}expenses/`, {
@@ -176,7 +190,7 @@ export default function Accounts() {
 
   return (
     <PortalLayout role="staff" title="Accounts & Expenses">
-      <div className="h-[calc(100vh-140px)] flex flex-col lg:flex-row gap-6 overflow-hidden">
+      <div className="flex flex-col lg:flex-row gap-6 lg:h-[calc(100dvh-140px)] lg:overflow-hidden">
         
         {/* Left Column: Form (Desktop Only) */}
         <div className="hidden lg:block w-[380px] h-full bg-white rounded-[4px] border border-gray-100 shadow-sm p-8 overflow-y-auto custom-scrollbar shrink-0">
@@ -318,7 +332,9 @@ export default function Accounts() {
               </div>
               <div>
                 <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Revenue</p>
-                <p className="text-lg font-black text-secondary">₹{revenue.toLocaleString()}</p>
+                <p className="text-lg font-black text-secondary">
+                  {isLoading ? <span className="inline-block h-5 w-20 bg-gray-200 rounded animate-pulse"></span> : `₹${revenue.toLocaleString()}`}
+                </p>
               </div>
             </div>
             <div className="bg-white p-5 rounded-[4px] border border-gray-50 shadow-sm flex items-center gap-4">
@@ -327,7 +343,9 @@ export default function Accounts() {
               </div>
               <div>
                 <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Spent</p>
-                <p className="text-lg font-black text-secondary">₹{totalExpenses.toLocaleString()}</p>
+                <p className="text-lg font-black text-secondary">
+                  {isLoading ? <span className="inline-block h-5 w-20 bg-gray-200 rounded animate-pulse"></span> : `₹${totalExpenses.toLocaleString()}`}
+                </p>
               </div>
             </div>
             <div className="bg-primary p-5 rounded-[4px] shadow-xl shadow-primary/20 flex items-center gap-4">
@@ -336,7 +354,9 @@ export default function Accounts() {
               </div>
               <div>
                 <p className="text-[10px] font-black text-white/70 uppercase tracking-widest">Balance</p>
-                <p className="text-lg font-black text-white">₹{balance.toLocaleString()}</p>
+                <p className="text-lg font-black text-white">
+                  {isLoading ? <span className="inline-block h-5 w-20 bg-white/20 rounded animate-pulse"></span> : `₹${balance.toLocaleString()}`}
+                </p>
               </div>
             </div>
           </div>
@@ -367,37 +387,24 @@ export default function Accounts() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {expenseList.map((item) => (
-                    <tr key={item.id} className="group hover:bg-gray-50/50 transition-all">
-                      <td className="px-6 py-5">
-                        <div className="flex flex-col">
-                          <span className="text-xs font-black text-secondary">{item.category}</span>
-                          {item.otherReason && (
-                            <span className="text-[10px] font-bold text-text-muted italic">{item.otherReason}</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <span className="text-[10px] font-bold text-text-muted">
-                          {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </td>
-                      <td className="px-6 py-5 text-right">
-                        <span className="text-xs font-black text-red-600">
-                          - ₹{item.amount.toLocaleString()}
-                        </span>
-                      </td>
-                      <td className="px-6 py-5 text-right">
-                        <button 
-                          onClick={() => removeExpense(item.id)}
-                          className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all cursor-pointer"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {expenseList.length === 0 && (
+                  {isLoading ? (
+                    Array.from({ length: 5 }).map((_, idx) => (
+                      <tr key={idx} className="animate-pulse">
+                        <td className="px-6 py-5">
+                          <div className="h-4 bg-gray-200 rounded w-24"></div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="h-3 bg-gray-200 rounded w-16"></div>
+                        </td>
+                        <td className="px-6 py-5 text-right">
+                          <div className="h-4 bg-gray-200 rounded w-20 ml-auto"></div>
+                        </td>
+                        <td className="px-6 py-5 text-right">
+                          <div className="h-8 bg-gray-200 rounded w-8 ml-auto"></div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : expenseList.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="px-6 py-12 text-center underline-offset-4">
                         <div className="flex flex-col items-center gap-3 text-black">
@@ -408,6 +415,37 @@ export default function Accounts() {
                         </div>
                       </td>
                     </tr>
+                  ) : (
+                    expenseList.map((item) => (
+                      <tr key={item.id} className="group hover:bg-gray-50/50 transition-all">
+                        <td className="px-6 py-5">
+                          <div className="flex flex-col">
+                            <span className="text-xs font-black text-secondary">{item.category}</span>
+                            {item.otherReason && (
+                              <span className="text-[10px] font-bold text-text-muted italic">{item.otherReason}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <span className="text-[10px] font-bold text-text-muted">
+                            {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </td>
+                        <td className="px-6 py-5 text-right">
+                          <span className="text-xs font-black text-red-600">
+                            - ₹{item.amount.toLocaleString()}
+                          </span>
+                        </td>
+                        <td className="px-6 py-5 text-right">
+                          <button 
+                            onClick={() => removeExpense(item.id)}
+                            className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all cursor-pointer"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
                   )}
                 </tbody>
               </table>

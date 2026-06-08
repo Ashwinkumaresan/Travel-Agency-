@@ -7,17 +7,17 @@ const SEO_DATA: Record<string, { title: string; description: string; canonical: 
   '/': {
     title: 'S A Salem Super Service | Reliable Parcel & Cargo Logistics in Tamil Nadu',
     description: 'S A Salem Super Service — Leading parcel and cargo service in Tamil Nadu since 2000. Door-to-door delivery, express cargo, packers & movers across Coimbatore, Salem, Chennai, Vellore & more.',
-    canonical: 'https://travel-agency-three-kappa.vercel.app/',
+    canonical: 'https://sasalemsuperservice.com/',
   },
   '/about': {
     title: 'About Us | S A Salem Super Service',
     description: 'Learn about S A Salem Super Service — a legacy of reliable logistics since 2000, serving Tamil Nadu with dedication and cutting-edge technology.',
-    canonical: 'https://travel-agency-three-kappa.vercel.app/about',
+    canonical: 'https://sasalemsuperservice.com/about',
   },
   '/contact': {
     title: 'Contact Us | S A Salem Super Service',
     description: 'Get in touch with S A Salem Super Service. Reach our branches in Mettur, Chennai, Bangalore, and Hyderabad for parcel and cargo bookings.',
-    canonical: 'https://travel-agency-three-kappa.vercel.app/contact',
+    canonical: 'https://sasalemsuperservice.com/contact',
   },
 };
 
@@ -27,8 +27,8 @@ const HOME_JSONLD = {
   "@type": "LogisticsService",
   "name": "S A Salem Super Service",
   "description": "Leading Parcel and Cargo Service Company in Tamil Nadu",
-  "url": "https://travel-agency-three-kappa.vercel.app",
-  "logo": "https://travel-agency-three-kappa.vercel.app/logo.png",
+  "url": "https://sasalemsuperservice.com",
+  "logo": "https://sasalemsuperservice.com/logo.png",
   "areaServed": [
     "Coimbatore", "Salem", "Chennai", "Vellore",
     "Mettur", "Bangalore", "Hyderabad", "Pondicherry"
@@ -57,6 +57,15 @@ const HOME_JSONLD = {
   "sameAs": []
 };
 
+// WebSite JSON-LD to explicitly set the Site Name for Google
+const WEBSITE_JSONLD = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "S A Salem Super Service",
+  "alternateName": "SA Salem Super Service",
+  "url": "https://sasalemsuperservice.com/"
+};
+
 export function render(url: string) {
   // Render the app HTML
   const html = renderToString(
@@ -79,7 +88,8 @@ export function render(url: string) {
   // Add JSON-LD only for the home page
   if (url === '/') {
     headTags.push(
-      `<script type="application/ld+json">${JSON.stringify(HOME_JSONLD)}</script>`
+      `<script type="application/ld+json">${JSON.stringify(HOME_JSONLD)}</script>`,
+      `<script type="application/ld+json">${JSON.stringify(WEBSITE_JSONLD)}</script>`
     );
   }
 

@@ -31,7 +31,7 @@ export default function Home() {
           <OurServices />
           <ExpressFeatures />
           <InfoBlocks />
-          <FeedbackSection />
+          {/* <FeedbackSection /> */}
         </article>
       </main>
 

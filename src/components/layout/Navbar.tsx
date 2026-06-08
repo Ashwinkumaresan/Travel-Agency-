@@ -37,7 +37,7 @@ export default function Navbar() {
           {/* Actions & Navigation (Right aligned) */}
           <div className="flex items-center gap-x-4 md:gap-x-8">
             {/* Desktop Navigation Links */}
-            <motion.div 
+            {/* <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6, duration: 0.5 }}
@@ -46,12 +46,12 @@ export default function Navbar() {
               <Link to="/" className="text-sm font-semibold text-text-muted hover:text-primary transition-colors border-b-2 border-transparent hover:border-primary py-1">Home</Link>
               <Link to="/about" className="text-sm font-semibold text-text-muted hover:text-primary transition-colors border-b-2 border-transparent hover:border-primary py-1">About</Link>
               <Link to="/contact" className="text-sm font-semibold text-text-muted hover:text-primary transition-colors border-b-2 border-transparent hover:border-primary py-1">Contact</Link>
-            </motion.div>
+            </motion.div> */}
 
             {/* CTA & Toggle Group */}
             <div className="flex items-center gap-3 md:gap-4">
               {/* CTA Button */}
-              <motion.div
+              {/* <motion.div
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2, duration: 0.5 }}
@@ -62,10 +62,10 @@ export default function Navbar() {
                 >
                   Book Now
                 </Link>
-              </motion.div>
+              </motion.div> */}
 
               {/* Mobile Toggle Button */}
-              <motion.div
+              {/* <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6, duration: 0.5 }}
@@ -86,14 +86,14 @@ export default function Navbar() {
                     )} />
                   </div>
                 </button>
-              </motion.div>
+              </motion.div> */}
             </div>
           </div>
         </div>
       </div>
 
       {/* Mobile Menu (Collapsible) */}
-      <div 
+      {/* <div 
         className={cn(
           "lg:hidden bg-white border-b border-gray-100 overflow-hidden transition-all duration-300 ease-in-out",
           isOpen ? "max-h-[300px] border-t" : "max-h-0 border-t-0"
@@ -104,7 +104,7 @@ export default function Navbar() {
           <Link to="/about" className="flex items-center px-4 py-3 text-base font-semibold text-secondary hover:bg-gray-50 rounded-xl transition-colors">About</Link>
           <Link to="/contact" className="flex items-center px-4 py-3 text-base font-semibold text-secondary hover:bg-gray-50 rounded-xl transition-colors">Contact</Link>
         </div>
-      </div>
+      </div> */}
     </nav>
   );
 }

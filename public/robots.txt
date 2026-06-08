@@ -6,4 +6,4 @@ Disallow: /admin/
 Disallow: /login
 Disallow: /register
 
-Sitemap: https://travel-agency-three-kappa.vercel.app/sitemap.xml
+Sitemap: https://sasalemsuperservice.com/sitemap.xml

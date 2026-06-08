@@ -23,7 +23,7 @@ export default function PortalLayout({ children, role, title }: PortalLayoutProp
   }, [location.pathname]);
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex h-dvh bg-background overflow-hidden">
       {/* Sidebar Overlay (Mobile) */}
       <AnimatePresence>
         {isSidebarOpen && (
@@ -53,7 +53,7 @@ export default function PortalLayout({ children, role, title }: PortalLayoutProp
           onMenuClick={() => setIsSidebarOpen(true)} 
         />
         
-        <main className="flex-grow p-4 md:p-8 overflow-y-auto custom-scrollbar">
+        <main className="flex-grow p-3 md:p-8 overflow-y-auto custom-scrollbar">
           {children}
         </main>
       </div>

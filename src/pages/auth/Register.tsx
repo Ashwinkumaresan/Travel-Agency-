@@ -154,11 +154,8 @@ export default function Register() {
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <Link to="/" className="flex items-center gap-2 mb-2">
-            <div className="bg-primary p-2 rounded-md">
-              <Compass className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-sidebar-logo font-display font-bold text-secondary tracking-tight">
-              Voyage<span className="text-primary">Arc</span>
+            <span className="text-xl font-display font-bold text-secondary tracking-tight">
+              S A Salem Super <span className="text-primary font-[Dancing_Script]">Service</span>
             </span>
           </Link>
           <div className="flex gap-2 mt-4">

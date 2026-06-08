@@ -19,8 +19,8 @@ export default function About() {
               Our Story
             </motion.h1>
             <p className="text-gray-400 text-lg">
-              Founded in 2010, VoyageArc has been at the forefront of luxury travel, 
-              creating unforgettable memories for thousands of explorers.
+              Founded in 2010, S A Salem Super Service has been at the forefront of logistics and cargo transport, 
+              providing seamless and reliable shipping solutions for businesses and individuals alike.
             </p>
           </div>
         </section>
@@ -31,8 +31,8 @@ export default function About() {
             <div>
               <h2 className="text-4xl font-display font-bold text-secondary mb-6">Our Mission</h2>
               <p className="text-text-muted mb-6 leading-relaxed">
-                At VoyageArc, we believe that travel is not just about visiting new places, but about experiencing them. 
-                Our mission is to provide personalized, high-quality travel experiences that inspire and enrich the lives of our clients.
+                At S A Salem Super Service, we believe that logistics is not just about moving goods, but about building trust. 
+                Our mission is to provide secure, prompt, and high-quality parcel delivery and transport services that empower our clients.
               </p>
               <div className="grid grid-cols-2 gap-8">
                 <div>
@@ -41,7 +41,7 @@ export default function About() {
                 </div>
                 <div>
                   <h4 className="text-3xl font-display font-bold text-primary mb-1">50k+</h4>
-                  <p className="text-sm text-text-muted">Happy Travellers</p>
+                  <p className="text-sm text-text-muted">Happy Clients</p>
                 </div>
               </div>
             </div>

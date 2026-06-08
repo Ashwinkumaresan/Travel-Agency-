@@ -220,11 +220,13 @@ export default function RouteMappingPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [staffLocationId, setStaffLocationId] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
         const token = localStorage.getItem('accessToken');
         
         const headers = { 'Authorization': `Bearer ${token}` };
@@ -254,6 +256,8 @@ export default function RouteMappingPage() {
         
       } catch (error) {
         console.error('Error fetching data:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchData();
@@ -295,7 +299,7 @@ export default function RouteMappingPage() {
     }
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
       const token = localStorage.getItem('accessToken');
 
       const response = await fetch(`${apiUrl}routes/create/`, {
@@ -337,7 +341,7 @@ export default function RouteMappingPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
       const token = localStorage.getItem('accessToken');
 
       const response = await fetch(`${apiUrl}routes/${id}/`, {
@@ -382,7 +386,7 @@ export default function RouteMappingPage() {
     }
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
       const token = localStorage.getItem('accessToken');
 
       const response = await fetch(`${apiUrl}routes/${id}/`, {
@@ -434,7 +438,7 @@ export default function RouteMappingPage() {
 
   return (
     <PortalLayout role="staff" title="Route Mapping">
-      <div className="max-w-7xl mx-auto h-full max-h-[calc(100vh-120px)] flex flex-col gap-6 overflow-hidden">
+      <div className="max-w-7xl mx-auto flex flex-col gap-6 lg:h-full lg:max-h-[calc(100dvh-120px)] lg:overflow-hidden">
         
         {/* Top Info Bar */}
         <div className="flex items-center justify-between shrink-0">
@@ -442,7 +446,7 @@ export default function RouteMappingPage() {
             <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Base Hub:</span>
             <div className="bg-primary/5 text-primary px-4 py-1.5 rounded-[4px] flex items-center gap-2 border border-primary/10">
               <Building2 className="h-4 w-4" />
-              <span className="text-sm font-black">{staffInfo.location}</span>
+              <span className="text-sm font-black">Selected</span>
             </div>
           </div>
           <div className="flex items-center gap-2 px-3 py-1 bg-secondary/5 rounded-[4px] text-[10px] font-bold text-secondary">
@@ -468,7 +472,7 @@ export default function RouteMappingPage() {
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Starting From</label>
                   <div className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 rounded-[8px]">
                     <Building2 className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm font-bold text-secondary">{staffInfo.location}</span>
+                    <span className="text-sm font-bold text-secondary">Selected</span>
                   </div>
                 </div>
 
@@ -527,26 +531,34 @@ export default function RouteMappingPage() {
 
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Assign Driver</label>
-                  <SearchableSelect 
-                    value={selectedDriverId}
-                    onSelect={setSelectedDriverId}
-                    options={drivers.map(d => ({ id: d.id.toString(), label: d.user_name || `Driver ${d.id}`, sublabel: `Lic: ${d.license_number}` }))}
-                    placeholder="Select Driver"
-                    icon={<UserIcon className="h-4 w-4" />}
-                    className="h-11"
-                  />
+                  {isLoading ? (
+                    <div className="w-full h-11 bg-gray-100 rounded animate-pulse"></div>
+                  ) : (
+                    <SearchableSelect 
+                      value={selectedDriverId}
+                      onSelect={setSelectedDriverId}
+                      options={drivers.map(d => ({ id: d.id.toString(), label: d.user_name || `Driver ${d.id}`, sublabel: `Lic: ${d.license_number}` }))}
+                      placeholder="Select Driver"
+                      icon={<UserIcon className="h-4 w-4" />}
+                      className="h-11"
+                    />
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Assign Vehicle</label>
-                  <SearchableSelect 
-                    value={selectedVehicleId}
-                    onSelect={setSelectedVehicleId}
-                    options={vehicles.map(v => ({ id: v.id.toString(), label: v.vehicle_number }))}
-                    placeholder="Select Vehicle"
-                    icon={<Truck className="h-4 w-4" />}
-                    className="h-11"
-                  />
+                  {isLoading ? (
+                    <div className="w-full h-11 bg-gray-100 rounded animate-pulse"></div>
+                  ) : (
+                    <SearchableSelect 
+                      value={selectedVehicleId}
+                      onSelect={setSelectedVehicleId}
+                      options={vehicles.map(v => ({ id: v.id.toString(), label: v.vehicle_number }))}
+                      placeholder="Select Vehicle"
+                      icon={<Truck className="h-4 w-4" />}
+                      className="h-11"
+                    />
+                  )}
                 </div>
 
                 <div className="pt-2">
@@ -599,8 +611,35 @@ export default function RouteMappingPage() {
                     <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filteredMappings.length === 0 ? (
+                <tbody className="divide-y divide-gray-100 text-black">
+                  {isLoading ? (
+                    Array.from({ length: 4 }).map((_, idx) => (
+                      <tr key={idx} className="animate-pulse">
+                        <td className="px-6 py-5">
+                          <div className="h-4 bg-gray-200 rounded w-16"></div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex gap-2">
+                            <div className="h-6 bg-gray-200 rounded w-16"></div>
+                            <div className="h-6 bg-gray-200 rounded w-16"></div>
+                            <div className="h-6 bg-gray-200 rounded w-16"></div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="h-4 bg-gray-200 rounded w-16"></div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="space-y-2 w-24">
+                            <div className="h-4 bg-gray-200 rounded"></div>
+                            <div className="h-4 bg-gray-200 rounded"></div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5 text-right">
+                          <div className="h-8 bg-gray-200 rounded w-8 ml-auto"></div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : filteredMappings.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="px-6 py-20 text-center text-text-muted italic text-sm">
                          <div className="flex flex-col items-center gap-3">

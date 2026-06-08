@@ -7,7 +7,7 @@ import {
   ChevronRight, ArrowLeftRight, Clock, Hash, ShieldCheck,
   Settings2, LayoutGrid, List, MoreVertical,
   Banknote, Wallet, ArrowUpCircle, ArrowDownCircle,
-  Navigation, XCircle
+  Navigation, XCircle, Printer
 } from 'lucide-react';
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -20,6 +20,7 @@ export default function ManageBookings() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'in-place' | 'shipping' | 'sent' | 'incoming' | 'received'>('all');
+  const [printingLrNo, setPrintingLrNo] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   
   // Modals state
@@ -34,12 +35,13 @@ export default function ManageBookings() {
   const [filterRoute, setFilterRoute] = useState('');
 
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [locations, setLocations] = useState<{id: number, name: string}[]>([]);
 
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
         const token = localStorage.getItem('accessToken');
         const response = await fetch(`${apiUrl}locations/other/`, {
           headers: {
@@ -62,7 +64,7 @@ export default function ManageBookings() {
   useEffect(() => {
     const fetchVehicles = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
         const token = localStorage.getItem('accessToken');
         const response = await fetch(`${apiUrl}vehicles/`, {
           headers: {
@@ -85,7 +87,7 @@ export default function ManageBookings() {
   useEffect(() => {
     const fetchRoutes = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
         const token = localStorage.getItem('accessToken');
         const response = await fetch(`${apiUrl}routes/`, {
           headers: {
@@ -111,8 +113,9 @@ export default function ManageBookings() {
   };
 
   const fetchBookings = async () => {
+    setIsLoading(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
       const token = localStorage.getItem('accessToken');
       
       let url = `${apiUrl}couriers/`;
@@ -165,10 +168,13 @@ export default function ManageBookings() {
       }
     } catch (error) {
       console.error('Error fetching bookings:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    setSelectedIds([]);
     fetchBookings();
   }, [activeTab, locations]);
 
@@ -181,7 +187,7 @@ export default function ManageBookings() {
 
   const handleStatusUpdate = async (bookingId: string, nextStatus: Booking['status']) => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
       const token = localStorage.getItem('accessToken');
       
       let endpoint = '';
@@ -216,6 +222,62 @@ export default function ManageBookings() {
     }
   };
 
+  const handlePrintLR = async (lrNumber: string) => {
+    setPrintingLrNo(lrNumber);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
+      const token = localStorage.getItem('accessToken');
+      
+      const response = await fetch(`${apiUrl}couriers/pdf/${lrNumber}/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'absolute';
+        iframe.style.width = '0px';
+        iframe.style.height = '0px';
+        iframe.style.border = 'none';
+        iframe.src = url;
+        
+        document.body.appendChild(iframe);
+        
+        iframe.onload = () => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+            
+            setTimeout(() => {
+              document.body.removeChild(iframe);
+              window.URL.revokeObjectURL(url);
+            }, 60000);
+          } catch (e) {
+            console.error('Direct print failed, falling back to download:', e);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `courier_${lrNumber}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+          }
+        };
+      } else {
+        toast.error('Failed to retrieve LR PDF');
+      }
+    } catch (error) {
+      console.error('Error printing LR PDF:', error);
+      toast.error('An error occurred while printing LR PDF');
+    } finally {
+      setPrintingLrNo(null);
+    }
+  };
+
   const handlePaymentUpdate = (bookingId: string) => {
     const updated = bookings.map(b => 
       b.id === bookingId ? { ...b, paymentStatus: 'paid' as const, paymentMode: selectedPaymentMode } : b
@@ -227,7 +289,7 @@ export default function ManageBookings() {
 
   const handleBulkVehicleAssign = async (routeId: number) => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
       const token = localStorage.getItem('accessToken');
 
       const promises = selectedIds.map(async (id) => {
@@ -261,7 +323,7 @@ export default function ManageBookings() {
 
   const handleBulkStatusChange = async (status: Booking['status']) => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
       const token = localStorage.getItem('accessToken');
       
       let endpoint = '';
@@ -310,7 +372,7 @@ export default function ManageBookings() {
     }
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
       const token = localStorage.getItem('accessToken');
 
       const response = await fetch(`${apiUrl}gdms/create/`, {
@@ -385,11 +447,11 @@ export default function ManageBookings() {
 
   return (
     <PortalLayout role="staff" title="Manage Bookings">
-      <div className="max-w-7xl mx-auto h-full flex flex-col gap-6 overflow-hidden">
+      <div className="max-w-7xl mx-auto flex flex-col gap-4 md:gap-6 lg:h-full lg:overflow-hidden">
         
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
-          <div className="flex items-center gap-3 bg-gray-100/50 p-1 rounded-[8px] w-full md:w-fit overflow-x-auto custom-scrollbar border border-gray-100">
+          <div className="flex items-center gap-3 bg-gray-100/50 p-1 rounded-[8px] w-full md:w-fit overflow-x-auto no-scrollbar border border-gray-100">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -435,17 +497,17 @@ export default function ManageBookings() {
 
         {/* Bulk Actions Bar */}
         <AnimatePresence>
-          {selectedIds.length > 0 && (
+          {selectedIds.length > 0 && activeTab === 'in-place' && (
             <motion.div 
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="px-6 py-3 bg-secondary text-white rounded-[8px] flex items-center justify-between shadow-xl shadow-secondary/20 shrink-0"
+              className="px-4 md:px-6 py-3 bg-secondary text-white rounded-[8px] flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-xl shadow-secondary/20 shrink-0"
             >
               <div className="flex items-center gap-4">
                 <span className="text-sm font-black text-white/90">{selectedIds.length} Bookings Selected</span>
                 <div className="h-4 w-px bg-white/20" />
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <button 
                     onClick={() => setIsVehicleModalOpen(true)}
                     className="px-4 py-1.5 bg-white/10 hover:bg-white/20 rounded-[4px] text-xs font-black transition-colors flex items-center gap-2"
@@ -479,13 +541,13 @@ export default function ManageBookings() {
         </AnimatePresence>
 
         {/* Table Container */}
-        <div className="flex-1 bg-white rounded-[8px] border border-gray-100 shadow-sm overflow-hidden flex flex-col min-h-0">
+        <div className="flex-1 bg-white rounded-[8px] border border-gray-100 shadow-sm overflow-hidden flex flex-col min-h-0 max-h-[70vh] lg:max-h-full">
           <div className="overflow-auto custom-scrollbar flex-1 relative">
             <table className="w-full text-left border-collapse">
               <thead className="bg-gray-50/80 sticky top-0 z-10 backdrop-blur-md">
                 <tr>
                   <th className="px-6 py-4 w-12">
-                    {activeTab !== 'all' && (
+                    {activeTab === 'in-place' && (
                       <input 
                         type="checkbox" 
                         className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer transition-all"
@@ -505,8 +567,53 @@ export default function ManageBookings() {
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
-                {filteredBookings.length === 0 ? (
+              <tbody className="divide-y divide-gray-50 text-black">
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, idx) => (
+                    <tr key={idx} className="animate-pulse">
+                      <td className="px-6 py-5">
+                        {activeTab !== 'all' && (
+                          <div className="w-4 h-4 bg-gray-200 rounded"></div>
+                        )}
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="h-4 bg-gray-200 rounded w-16"></div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 bg-gray-200 rounded-[8px] shrink-0"></div>
+                          <div className="space-y-2 w-24">
+                            <div className="h-4 bg-gray-200 rounded"></div>
+                            <div className="h-3 bg-gray-200 rounded"></div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="space-y-2 w-32">
+                          <div className="h-4 bg-gray-200 rounded"></div>
+                          <div className="h-3 bg-gray-200 rounded"></div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="h-8 bg-gray-200 rounded w-24"></div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="space-y-2 w-16">
+                          <div className="h-4 bg-gray-200 rounded"></div>
+                          <div className="h-3 bg-gray-200 rounded"></div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="h-6 bg-gray-200 rounded w-20"></div>
+                      </td>
+                      {activeTab !== 'all' && (
+                        <td className="px-6 py-5 text-right">
+                          <div className="h-8 bg-gray-200 rounded w-8 ml-auto"></div>
+                        </td>
+                      )}
+                    </tr>
+                  ))
+                ) : filteredBookings.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-24">
                       <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-500">
@@ -527,7 +634,7 @@ export default function ManageBookings() {
                       selectedIds.includes(booking.id) && "bg-primary-light/10 hover:bg-primary-light/20"
                     )}>
                       <td className="px-6 py-5">
-                        {activeTab !== 'all' && (
+                        {activeTab === 'in-place' && (
                           <input 
                             type="checkbox" 
                             className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer transition-all"
@@ -648,6 +755,11 @@ export default function ManageBookings() {
                                 onClick: () => setSelectedBooking(booking)
                               },
                               ...(booking.status === 'in-place' ? [
+                                {
+                                  label: 'Print LR',
+                                  icon: <Printer className="h-4 w-4" />,
+                                  onClick: () => handlePrintLR(booking.lrNo)
+                                },
                                 {
                                   label: 'Mark as Shipping',
                                   icon: <ArrowUpCircle className="h-4 w-4" />,
@@ -1063,7 +1175,23 @@ export default function ManageBookings() {
                      <div className="p-6 border border-gray-100 rounded-[8px] space-y-4">
                         <p className="text-[9px] font-black text-text-muted uppercase text-center border-b border-gray-50 pb-3">Quick Logistics Actions</p>
                         <div className="space-y-2">
-                           <button onClick={() => setSelectedBooking(null)} className="w-full h-11 bg-gray-100 text-secondary text-xs font-black rounded-[8px] hover:bg-gray-200 transition-all flex items-center justify-center gap-2 italic">DOWNLOAD LR RECEIPT</button>
+                            <button 
+                              onClick={() => handlePrintLR(selectedBooking.lrNo)} 
+                              disabled={printingLrNo !== null}
+                              className="w-full h-11 bg-gray-100 text-secondary text-xs font-black rounded-[8px] hover:bg-gray-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                              {printingLrNo === selectedBooking.lrNo ? (
+                                <>
+                                  <svg className="animate-spin h-4 w-4 text-secondary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  PRINTING...
+                                </>
+                              ) : (
+                                "PRINT LR RECEIPT"
+                              )}
+                            </button>
                            {selectedBooking.status === 'in-place' && (
                              <button onClick={() => { handleStatusUpdate(selectedBooking.id, 'shipping'); setSelectedBooking(null); }} className="w-full h-11 bg-primary text-white text-xs font-black rounded-[8px] hover:scale-105 transition-all shadow-xl shadow-primary/20 italic">DISPATCH SHIPMENT</button>
                            )}

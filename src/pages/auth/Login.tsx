@@ -16,7 +16,7 @@ export default function Login() {
     e.preventDefault();
     if (role === 'staff') {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
         const response = await fetch(`${apiUrl}login/`, {
           method: 'POST',
           headers: {
@@ -93,11 +93,8 @@ export default function Login() {
         <div className="w-full max-w-[420px] bg-white p-6 md:p-0">
           {/* Mobile Logo */}
           <Link to="/" className="flex md:hidden items-center justify-center gap-2 mb-8">
-            <div className="bg-primary p-2 rounded-md">
-              <Compass className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-sidebar-logo font-display font-bold text-secondary tracking-tight">
-              Voyage<span className="text-primary">Arc</span>
+            <span className="text-xl font-display font-bold text-secondary tracking-tight">
+              S A Salem Super <span className="text-primary font-[Dancing_Script]">Service</span>
             </span>
           </Link>
 

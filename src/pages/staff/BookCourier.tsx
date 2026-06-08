@@ -33,6 +33,8 @@ export default function BookCourier() {
 
   // States
   const [locations, setLocations] = useState<{ id: number, name: string }[]>([]);
+  const [isLoadingLocations, setIsLoadingLocations] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [routeInfo, setRouteInfo] = useState({
     toBranch: '',
@@ -48,8 +50,9 @@ export default function BookCourier() {
 
   useEffect(() => {
     const fetchLocations = async () => {
+      setIsLoadingLocations(true);
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
         const token = localStorage.getItem('accessToken');
         const response = await fetch(`${apiUrl}locations/other/`, {
           headers: {
@@ -62,6 +65,8 @@ export default function BookCourier() {
         }
       } catch (error) {
         console.error('Error fetching locations:', error);
+      } finally {
+        setIsLoadingLocations(false);
       }
     };
     fetchLocations();
@@ -90,6 +95,7 @@ export default function BookCourier() {
 
   const [isBranchSearchOpen, setIsBranchSearchOpen] = useState(false);
   const [branchSearch, setBranchSearch] = useState('');
+  const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
 
   // Derived
   const filteredBranches = useMemo(() =>
@@ -126,8 +132,9 @@ export default function BookCourier() {
   };
 
   const handleConfirm = async () => {
+    setIsSubmitting(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
       const token = localStorage.getItem('accessToken');
 
       // Transform packages to list of lists
@@ -167,18 +174,42 @@ export default function BookCourier() {
       });
 
       if (response.ok) {
-        // Handle PDF response
+        // Handle PDF response and trigger print dialog directly
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `courier_${payload.invoice_number}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'absolute';
+        iframe.style.width = '0px';
+        iframe.style.height = '0px';
+        iframe.style.border = 'none';
+        iframe.src = url;
+        
+        document.body.appendChild(iframe);
+        
+        iframe.onload = () => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+            
+            // Clean up the iframe after 60 seconds
+            setTimeout(() => {
+              document.body.removeChild(iframe);
+              window.URL.revokeObjectURL(url);
+            }, 60000);
+          } catch (e) {
+            console.error('Direct print failed, falling back to download:', e);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `courier_${payload.invoice_number}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+          }
+        };
 
-        alert('Booking Confirmed and PDF Downloaded Successfully!');
+        alert('Booking Confirmed and Print request sent successfully!');
 
         // Reset all fields
         setRouteInfo({
@@ -215,18 +246,20 @@ export default function BookCourier() {
     } catch (error) {
       console.error('Error creating courier:', error);
       alert('An error occurred during booking');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <PortalLayout role="staff" title="New Courier Booking">
-      <div className="max-w-[1600px] mx-auto h-full xl:max-h-[calc(100vh-140px)] flex flex-col gap-4">
+      <div className="max-w-[1600px] mx-auto flex flex-col gap-4 xl:h-full">
 
         {/* Main Grid Content */}
-        <div className="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-6 min-h-0 overflow-hidden">
+        <div className="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-6 min-h-0 xl:overflow-hidden">
 
           {/* Scrollable Form Section */}
-          <div className="xl:col-span-8 h-full overflow-y-auto pr-2 space-y-6 pb-4 custom-scrollbar">
+          <div className="xl:col-span-8 xl:h-full xl:overflow-y-auto pr-2 space-y-6 pb-28 xl:pb-4 custom-scrollbar">
 
             {/* Section 1: Route Information */}
             <div className="bg-white rounded-[8px] border border-gray-100 shadow-sm overflow-hidden">
@@ -240,24 +273,28 @@ export default function BookCourier() {
                     <label className="text-[10px] font-bold text-text-muted uppercase mb-1.5 block">From Branch</label>
                     <div className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 rounded-[4px]">
                       <Building2 className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm font-bold text-secondary">{staffBranch}</span>
+                      <span className="text-sm font-bold text-secondary">{staffBranch || 'Selected'}</span>
                     </div>
                   </div>
 
                   <div className="relative">
                     <label className="text-[10px] font-bold text-text-muted uppercase mb-1.5 block">To Branch Selection</label>
-                    <div
-                      onClick={() => setIsBranchSearchOpen(!isBranchSearchOpen)}
-                      className="flex items-center justify-between p-3 border border-gray-100 rounded-[4px] cursor-pointer hover:border-primary/30 transition-all bg-white"
-                    >
-                      <div className="flex items-center gap-3">
-                        <ArrowRight className="h-4 w-4 text-primary" />
-                        <span className={cn("text-sm", routeInfo.toBranch ? "font-bold text-secondary" : "text-gray-400")}>
-                          {routeInfo.toBranch || 'Select Destination Branch'}
-                        </span>
+                    {isLoadingLocations ? (
+                      <div className="w-full h-11 bg-gray-100 rounded animate-pulse"></div>
+                    ) : (
+                      <div
+                        onClick={() => setIsBranchSearchOpen(!isBranchSearchOpen)}
+                        className="flex items-center justify-between p-3 border border-gray-100 rounded-[4px] cursor-pointer hover:border-primary/30 transition-all bg-white"
+                      >
+                        <div className="flex items-center gap-3">
+                          <ArrowRight className="h-4 w-4 text-primary" />
+                          <span className={cn("text-sm", routeInfo.toBranch ? "font-bold text-secondary" : "text-gray-400")}>
+                            {routeInfo.toBranch || 'Select Destination Branch'}
+                          </span>
+                        </div>
+                        <Search className="h-4 w-4 text-gray-300" />
                       </div>
-                      <Search className="h-4 w-4 text-gray-300" />
-                    </div>
+                    )}
 
                     <AnimatePresence>
                       {isBranchSearchOpen && (
@@ -601,8 +638,8 @@ export default function BookCourier() {
           </div>
 
           {/* Sticky Side Summary Section */}
-          <div className="xl:col-span-4 h-full flex flex-col gap-4">
-            <div className="bg-secondary text-white rounded-[8px] shadow-xl overflow-hidden flex flex-col h-full sticky top-0">
+          <div className="hidden xl:flex xl:col-span-4 xl:self-start flex-col gap-4">
+            <div className="bg-secondary text-white rounded-[8px] shadow-xl overflow-hidden flex flex-col">
               <div className="p-6 border-b border-white/10 flex items-center gap-3 bg-white/5">
                 <ClipboardList className="h-5 w-5 text-primary" />
                 <h2 className="text-lg font-display font-bold uppercase tracking-wider">Booking Summary</h2>
@@ -693,10 +730,22 @@ export default function BookCourier() {
               <div className="p-6 bg-primary">
                 <button
                   onClick={handleConfirm}
-                  disabled={!routeInfo.toBranch || totalAmount === 0}
+                  disabled={isSubmitting || !routeInfo.toBranch || totalAmount === 0}
                   className="w-full flex items-center justify-center gap-3 py-4 text-sm font-black uppercase tracking-widest text-white hover:bg-secondary transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none rounded-[4px] bg-black/10"
                 >
-                  Print LR <ArrowRight className="h-4 w-4" />
+                  {isSubmitting ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Printing...
+                    </>
+                  ) : (
+                    <>
+                      Print LR <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -712,6 +761,163 @@ export default function BookCourier() {
 
         </div>
       </div>
+
+      {/* Mobile Summary Floating Button */}
+      <div className="xl:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-xl border-t border-gray-100 z-30">
+        <button
+          onClick={() => setIsSummaryModalOpen(true)}
+          disabled={!routeInfo.toBranch || totalAmount === 0}
+          className="w-full flex items-center justify-center gap-3 py-4 bg-primary text-white font-black text-sm uppercase tracking-widest rounded-[8px] shadow-xl shadow-primary/30 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none"
+        >
+          <ClipboardList className="h-5 w-5" />
+          Review & Print LR — {formatCurrency(totalAmount)}
+        </button>
+      </div>
+
+      {/* Mobile Summary Modal */}
+      <AnimatePresence>
+        {isSummaryModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-end justify-center xl:hidden">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsSummaryModalOpen(false)}
+              className="absolute inset-0 bg-secondary/60 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative bg-white w-full max-h-[90vh] rounded-t-[24px] shadow-2xl overflow-hidden flex flex-col"
+            >
+              {/* Handle bar */}
+              <div className="flex justify-center py-3 shrink-0">
+                <div className="w-10 h-1 bg-gray-300 rounded-full" />
+              </div>
+
+              {/* Header */}
+              <div className="px-6 pb-4 flex items-center justify-between border-b border-gray-100 shrink-0">
+                <div className="flex items-center gap-3">
+                  <ClipboardList className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg font-display font-bold text-secondary">Booking Summary</h2>
+                </div>
+                <button
+                  onClick={() => setIsSummaryModalOpen(false)}
+                  className="p-2 hover:bg-gray-100 rounded-[8px] transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-400" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                {/* Shipment Path */}
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-text-muted uppercase">Shipment Path</p>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-bold text-secondary">{staffBranch}</span>
+                    <ArrowRight className="h-3 w-3 text-primary" />
+                    <span className={cn("text-sm font-bold", routeInfo.toBranch ? "text-secondary" : "text-gray-300")}>
+                      {routeInfo.toBranch || 'Not Selected'}
+                    </span>
+                  </div>
+                  {routeInfo.deliveryType && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <Truck className="h-3 w-3 text-primary" />
+                      <span className="text-[10px] font-medium bg-primary/5 text-primary px-2 py-0.5 rounded-[4px]">{routeInfo.deliveryType} Delivery</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Sender / Receiver */}
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-text-muted uppercase">Sender</p>
+                    <p className="text-xs font-bold text-secondary">{routeInfo.fromName || 'No Name'}</p>
+                    <p className="text-[10px] text-text-muted italic line-clamp-1">{routeInfo.fromAddress || 'No address'}</p>
+                    <p className="text-[10px] font-bold text-primary">{routeInfo.fromPhone || 'No Phone'}</p>
+                  </div>
+                  <div className="space-y-1 text-right">
+                    <p className="text-[10px] font-bold text-text-muted uppercase">Receiver</p>
+                    <p className="text-xs font-bold text-secondary">{routeInfo.toName || 'No Name'}</p>
+                    <p className="text-[10px] text-text-muted italic line-clamp-1">{routeInfo.toAddress || 'No address'}</p>
+                    <p className="text-[10px] font-bold text-primary">{routeInfo.toPhone || 'No Phone'}</p>
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-100">
+                  <div>
+                    <p className="text-[10px] font-bold text-text-muted uppercase">Packages</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Package className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-bold text-secondary">{totalPackages}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-text-muted uppercase">Weight</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Weight className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-bold text-secondary">{paymentInfo.weight} KG</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold text-text-muted uppercase">Status</p>
+                    <div className="mt-1 flex flex-col items-end gap-1">
+                      <span className={cn(
+                        "px-2 py-0.5 rounded-[4px] text-[10px] font-bold",
+                        paymentInfo.status === 'Paid' ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
+                      )}>
+                        {paymentInfo.status}
+                      </span>
+                      {paymentInfo.status === 'Paid' && (
+                        <span className="text-[9px] font-medium text-text-muted italic">via {paymentInfo.paymentMode}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Invoice & Total */}
+                <div className="bg-gray-50 p-4 rounded-[8px] border border-gray-100 flex justify-between items-center">
+                  <div>
+                    <p className="text-[10px] font-bold text-text-muted uppercase mb-1">Invoice</p>
+                    <p className="text-xs font-mono font-bold text-primary">{paymentInfo.invoiceNumber || 'NEW-BOOKING'}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold text-text-muted uppercase mb-1">Grand Total</p>
+                    <p className="text-2xl font-display font-bold text-secondary">{formatCurrency(totalAmount)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Confirm Button */}
+              <div className="p-5 bg-primary shrink-0">
+                <button
+                  onClick={() => { setIsSummaryModalOpen(false); handleConfirm(); }}
+                  disabled={isSubmitting || !routeInfo.toBranch || totalAmount === 0}
+                  className="w-full flex items-center justify-center gap-3 py-4 text-sm font-black uppercase tracking-widest text-white hover:bg-black/10 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none rounded-[4px] bg-black/10"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Confirming...
+                    </>
+                  ) : (
+                    <>
+                      Confirm & Print LR <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {

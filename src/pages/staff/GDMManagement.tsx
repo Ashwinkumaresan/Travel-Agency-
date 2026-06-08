@@ -20,7 +20,7 @@ export default function GDMManagement() {
   const [bookings, setBookings] = useState<Booking[]>([]);
 
   const [selectedGDM, setSelectedGDM] = useState<GDM | null>(null);
-  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [printingGdmId, setPrintingGdmId] = useState<string | null>(null);
 
   const mapBackendStatusToFrontend = (status: string): Booking['status'] => {
     if (status === 'inplace') return 'in-place';
@@ -31,7 +31,7 @@ export default function GDMManagement() {
 
   const fetchBookings = async () => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
       const token = localStorage.getItem('accessToken');
       
       const response = await fetch(`${apiUrl}couriers/?status=all`, {
@@ -71,7 +71,7 @@ export default function GDMManagement() {
 
   const fetchGDMs = async (bookingsData: Booking[]) => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
       const token = localStorage.getItem('accessToken');
       
       const response = await fetch(`${apiUrl}gdms/`, {
@@ -143,7 +143,7 @@ export default function GDMManagement() {
     e.stopPropagation();
     
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
       const token = localStorage.getItem('accessToken');
 
       const response = await fetch(`${apiUrl}gdms/${id}/`, {
@@ -170,7 +170,7 @@ export default function GDMManagement() {
     e.stopPropagation();
     
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
       const token = localStorage.getItem('accessToken');
 
       const response = await fetch(`${apiUrl}couriers/bulk-mark-shipping/`, {
@@ -207,7 +207,7 @@ export default function GDMManagement() {
     const newLrIds = selectedGDM.lrIds.filter(id => id !== lrId);
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
       const token = localStorage.getItem('accessToken');
 
       const response = await fetch(`${apiUrl}gdms/${selectedGDM.id}/`, {
@@ -275,8 +275,56 @@ export default function GDMManagement() {
     });
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async (gdmId: string, gdmNo: string) => {
+    setPrintingGdmId(gdmId);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
+      const token = localStorage.getItem('accessToken');
+      
+      const response = await fetch(`${apiUrl}gdms/${gdmId}/pdf/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        
+        // Create a hidden iframe for direct printing
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'absolute';
+        iframe.style.width = '0px';
+        iframe.style.height = '0px';
+        iframe.style.border = 'none';
+        iframe.src = url;
+        
+        document.body.appendChild(iframe);
+        
+        iframe.onload = () => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+            
+            // Clean up the iframe after a short delay (e.g. 60 seconds) to allow the printer system to process
+            setTimeout(() => {
+              document.body.removeChild(iframe);
+              window.URL.revokeObjectURL(url);
+            }, 60000);
+          } catch (e) {
+            console.error('Direct print failed, falling back to new window:', e);
+            window.open(url, '_blank');
+          }
+        };
+      } else {
+        toast.error('Failed to retrieve GDM PDF');
+      }
+    } catch (error) {
+      console.error('Error printing GDM PDF:', error);
+      toast.error('An error occurred while printing GDM PDF');
+    } finally {
+      setPrintingGdmId(null);
+    }
   };
 
   return (
@@ -284,14 +332,14 @@ export default function GDMManagement() {
       <div className="max-w-[1600px] mx-auto space-y-6 pb-20">
         
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-2 border-b border-gray-100">
-          <div className="flex items-center gap-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 pb-2 border-b border-gray-100">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8">
             <div>
               <h1 className="text-2xl font-display font-bold text-secondary tracking-tight">Goods Dispatch Memo</h1>
               <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mt-1">Manage transport dispatch records</p>
             </div>
             
-            <div className="hidden md:flex items-center bg-gray-100/50 p-1 rounded-[4px] border border-gray-200">
+            <div className="flex items-center bg-gray-100/50 p-1 rounded-[4px] border border-gray-200 overflow-x-auto no-scrollbar">
               {(['all', 'inplace', 'shipping', 'sent'] as const).map((tab) => (
                 <button
                   key={tab}
@@ -337,88 +385,135 @@ export default function GDMManagement() {
                   <th className="px-6 py-5 text-[10px] font-black text-text-muted uppercase tracking-widest text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
-                {filteredGDMs.map((gdm) => (
-                  <motion.tr 
-                    key={gdm.id} 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="group hover:bg-primary/5 transition-colors cursor-pointer"
-                    onClick={() => setSelectedGDM(gdm)}
-                  >
-                    <td className="px-6 py-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white border border-gray-50 rounded-xl shadow-sm flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                          <FileText className="h-5 w-5" />
+              <tbody className="divide-y divide-gray-50 text-black">
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, idx) => (
+                    <tr key={idx} className="animate-pulse">
+                      <td className="px-6 py-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gray-200 rounded-xl shadow-sm shrink-0 font-display"></div>
+                          <div className="space-y-2 w-28 font-display">
+                            <div className="h-4 bg-gray-200 rounded"></div>
+                            <div className="h-3 bg-gray-200 rounded"></div>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-black text-secondary">{gdm.gdmNo}</p>
-                          <p className="text-[10px] font-bold text-primary italic">{gdm.route}</p>
+                      </td>
+                      <td className="px-6 py-6">
+                        <div className="space-y-2 w-24">
+                          <div className="h-4 bg-gray-200 rounded"></div>
+                          <div className="h-3 bg-gray-200 rounded"></div>
                         </div>
-                      </div>
+                      </td>
+                      <td className="px-6 py-6 text-center">
+                        <div className="h-6 bg-gray-200 rounded w-10 mx-auto"></div>
+                      </td>
+                      <td className="px-6 py-6">
+                        <div className="h-3.5 bg-gray-200 rounded w-16"></div>
+                      </td>
+                      <td className="px-6 py-6">
+                        <div className="h-5 bg-gray-200 rounded w-16"></div>
+                      </td>
+                      <td className="px-6 py-6 text-right">
+                        <div className="h-8 bg-gray-200 rounded w-28 ml-auto"></div>
+                      </td>
+                    </tr>
+                  ))
+                ) : filteredGDMs.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center text-text-muted italic text-xs">
+                      No GDM records found for the selected filters.
                     </td>
-                    <td className="px-6 py-6">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <Truck className="h-3 w-3 text-primary" />
-                          <span className="text-xs font-black font-mono text-secondary">{gdm.vehicleNo}</span>
+                  </tr>
+                ) : (
+                  filteredGDMs.map((gdm) => (
+                    <motion.tr 
+                      key={gdm.id} 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="group hover:bg-primary/5 transition-colors cursor-pointer"
+                      onClick={() => setSelectedGDM(gdm)}
+                    >
+                      <td className="px-6 py-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-white border border-gray-50 rounded-xl shadow-sm flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                            <FileText className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-black text-secondary">{gdm.gdmNo}</p>
+                            <p className="text-[10px] font-bold text-primary italic">{gdm.route}</p>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <User className="h-3 w-3 text-text-muted" />
-                          <span className="text-[10px] font-bold text-text-muted">{gdm.driverName}</span>
+                      </td>
+                      <td className="px-6 py-6">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Truck className="h-3 w-3 text-primary" />
+                            <span className="text-xs font-black font-mono text-secondary">{gdm.vehicleNo}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <User className="h-3 w-3 text-text-muted" />
+                            <span className="text-[10px] font-bold text-text-muted">{gdm.driverName}</span>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-6 text-center">
-                      <span className="text-sm font-black text-secondary bg-gray-50 px-3 py-1 rounded-lg border border-gray-100">{gdm.totalLRCount}</span>
-                    </td>
-                    <td className="px-6 py-6 font-mono text-[10px] font-bold text-text-muted">
-                      {new Date(gdm.dispatchDate).toLocaleDateString('en-GB')}
-                    </td>
-                    <td className="px-6 py-6">
-                      <span className={cn(
-                        "text-[9px] px-2.5 py-1 rounded-full font-black uppercase tracking-tighter",
-                        gdm.status === 'generated' ? "bg-blue-100 text-blue-700" : 
-                        gdm.status === 'dispatched' ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
-                      )}>
-                        {gdm.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-6 text-right">
-                      <div className="flex items-center justify-end gap-3">
-                        {gdm.status !== 'dispatched' && (
+                      </td>
+                      <td className="px-6 py-6 text-center">
+                        <span className="text-sm font-black text-secondary bg-gray-50 px-3 py-1 rounded-lg border border-gray-100">{gdm.totalLRCount}</span>
+                      </td>
+                      <td className="px-6 py-6 font-mono text-[10px] font-bold text-text-muted">
+                        {new Date(gdm.dispatchDate).toLocaleDateString('en-GB')}
+                      </td>
+                      <td className="px-6 py-6">
+                        <span className={cn(
+                          "text-[9px] px-2.5 py-1 rounded-full font-black uppercase tracking-tighter",
+                          gdm.status === 'generated' ? "bg-blue-100 text-blue-700" : 
+                          gdm.status === 'dispatched' ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
+                        )}>
+                          {gdm.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-6 text-right">
+                        <div className="flex items-center justify-end gap-3">
+                          {gdm.status !== 'dispatched' && (
+                            <button 
+                              onClick={(e) => handleDispatchGDM(e, gdm)}
+                              className="p-2 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-xl transition-all border border-green-100 shadow-sm group/btn"
+                              title="Mark all as Shipped"
+                            >
+                              <Check className="h-4 w-4" />
+                            </button>
+                          )}
                           <button 
-                            onClick={(e) => handleDispatchGDM(e, gdm)}
-                            className="p-2 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-xl transition-all border border-green-100 shadow-sm group/btn"
-                            title="Mark all as Shipped"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePrint(gdm.id, gdm.gdmNo);
+                            }}
+                            className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all border border-blue-100 shadow-sm group/btn disabled:opacity-50"
+                            disabled={printingGdmId !== null}
+                            title="Print GDM Record"
                           >
-                            <Check className="h-4 w-4" />
+                            {printingGdmId === gdm.id ? (
+                              <svg className="animate-spin h-4 w-4 text-blue-600 hover:text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                            ) : (
+                              <Printer className="h-4 w-4" />
+                            )}
                           </button>
-                        )}
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedGDM(gdm);
-                            setIsPrintModalOpen(true);
-                          }}
-                          className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all border border-blue-100 shadow-sm group/btn"
-                          title="Print GDM Record"
-                        >
-                          <Printer className="h-4 w-4" />
-                        </button>
-                        <button 
-                          onClick={(e) => handleDeleteGDM(e, gdm.id)}
-                          className="p-2 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition-all border border-red-100 shadow-sm group/btn"
-                          title="Delete GDM"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                        <div className="w-px h-4 bg-gray-100 mx-1" />
-                        <ChevronRight className="h-4 w-4 text-gray-300 group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
+                          <button 
+                            onClick={(e) => handleDeleteGDM(e, gdm.id)}
+                            className="p-2 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition-all border border-red-100 shadow-sm group/btn"
+                            title="Delete GDM"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                          <div className="w-px h-4 bg-gray-100 mx-1" />
+                          <ChevronRight className="h-4 w-4 text-gray-300 group-hover:translate-x-1 transition-transform" />
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -432,7 +527,7 @@ export default function GDMManagement() {
               <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative bg-white w-full max-w-5xl rounded-[8px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
                 
                 {/* Modern Header */}
-                <div className="bg-secondary p-10 text-white flex justify-between items-start shrink-0 relative overflow-hidden">
+                <div className="bg-secondary p-6 md:p-10 text-white flex flex-col md:flex-row justify-between items-start gap-4 shrink-0 relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-80 h-80 bg-primary/10 rounded-[4px] blur-3xl -translate-y-1/2 translate-x-1/2" />
                   <div className="relative z-10 flex items-center gap-8">
                     <div className="w-16 h-16 bg-white/10 backdrop-blur-xl rounded-[8px] flex items-center justify-center border border-white/20 shadow-2xl"><FileText className="h-8 w-8 text-primary" /></div>
@@ -445,19 +540,37 @@ export default function GDMManagement() {
                     </div>
                   </div>
                   <div className="relative z-10 flex items-center gap-3">
-                    <button onClick={() => setIsPrintModalOpen(true)} className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-[8px] font-black text-xs transition-all shadow-xl shadow-green-500/20"><Printer className="h-4 w-4" /> PRINT GDM</button>
+                    <button 
+                      onClick={() => handlePrint(selectedGDM.id, selectedGDM.gdmNo)} 
+                      disabled={printingGdmId !== null}
+                      className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-[8px] font-black text-xs transition-all shadow-xl shadow-green-500/20 disabled:opacity-50"
+                    >
+                      {printingGdmId === selectedGDM.id ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          PRINTING GDM...
+                        </>
+                      ) : (
+                        <>
+                          <Printer className="h-4 w-4" /> PRINT GDM
+                        </>
+                      )}
+                    </button>
                     <button onClick={() => setSelectedGDM(null)} className="p-3 hover:bg-white/10 rounded-[8px] transition-colors backdrop-blur-md border border-white/10"><X className="h-6 w-6" /></button>
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar">
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                     
                     {/* Left Side: GDM Info & Summary */}
                     <div className="lg:col-span-2 space-y-10">
                       
                       {/* Transport Details Cards */}
-                      <div className="grid grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                         <div className="p-8 bg-gray-50 border border-gray-100 rounded-[8px] space-y-4">
                           <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] border-b border-gray-200 pb-3">Vehicle Details</p>
                           <div className="flex items-center gap-5">
@@ -597,118 +710,9 @@ export default function GDMManagement() {
           )}
         </AnimatePresence>
 
-        {/* Print Layout Overlay (Hidden in screen, visible in print) */}
-        <AnimatePresence>
-          {isPrintModalOpen && selectedGDM && (
-            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsPrintModalOpen(false)} className="absolute inset-0 bg-secondary/80 backdrop-blur-xl" />
-               <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-white w-full max-w-4xl max-h-[90vh] rounded-3xl p-10 overflow-y-auto">
-                  <div className="flex justify-between items-center mb-10 pb-6 border-b border-gray-100">
-                     <h3 className="text-xl font-display font-bold text-secondary flex items-center gap-3"><Printer className="h-6 w-6 text-primary" /> Print Preview - GDM</h3>
-                     <div className="flex gap-3">
-                        <button onClick={() => setIsPrintModalOpen(false)} className="px-6 py-3 rounded-2xl font-black text-xs text-text-muted hover:bg-gray-100 transition-all">Close</button>
-                        <button onClick={handlePrint} className="bg-primary text-white px-8 py-3 rounded-2xl font-black text-xs shadow-xl shadow-primary/20">Finalize & Print</button>
-                     </div>
-                  </div>
-
-                  {/* The actual printable area */}
-                  <div id="gdm-print-area" className="bg-white p-12 border border-gray-200 shadow-sm print:border-none print:shadow-none font-serif text-black">
-                     <div className="flex justify-between items-start mb-10 border-b-4 border-black pb-8">
-                        <div>
-                           <h1 className="text-4xl font-black tracking-tighter text-black mb-2 italic">VoyageArc</h1>
-                           <p className="text-xs font-bold uppercase tracking-widest text-gray-600">Enterprise Logistics Solutions</p>
-                           <p className="text-[9px] font-medium leading-relaxed max-w-[200px] mt-4 text-gray-500">Corporate Office: Tech Park Phase 2, Marina Road, Chennai - 600001</p>
-                        </div>
-                        <div className="text-right">
-                           <h2 className="text-2xl font-black uppercase text-black mb-4">GDM RECEIPT</h2>
-                           <div className="flex flex-col gap-3">
-                              <div className="space-y-1">
-                                 <p className="text-[10px] uppercase font-bold text-gray-500">GDM Number</p>
-                                 <p className="text-xl font-black font-mono">{selectedGDM.gdmNo}</p>
-                              </div>
-                              <div className="space-y-1">
-                                 <p className="text-[10px] uppercase font-bold text-gray-500">Dispatch Date</p>
-                                 <p className="text-xs font-bold text-gray-700">{formatDate(selectedGDM.dispatchDate)}</p>
-                              </div>
-                           </div>
-                           <div className="mt-4 flex flex-col items-end gap-1">
-                              <p className="text-[10px] font-black uppercase text-secondary">Route: {selectedGDM.route}</p>
-                              <p className="text-[10px] font-black uppercase text-secondary">Vehicle: {selectedGDM.vehicleNo}</p>
-                              <p className="text-[10px] font-black uppercase text-secondary">Driver: {selectedGDM.driverName}</p>
-                           </div>
-                        </div>
-                     </div>
-
-                     <div className="mb-10">
-                        <h4 className="text-xs font-black uppercase mb-4 pl-2 border-l-4 border-black">Consignment Ledger</h4>
-                        <table className="w-full border-collapse border border-black">
-                           <thead>
-                              <tr className="bg-gray-100 border-b border-black">
-                                 <th className="p-3 text-[10px] font-black uppercase border-r border-black">S.No</th>
-                                 <th className="p-3 text-[10px] font-black uppercase border-r border-black text-left">LR Number</th>
-                                 <th className="p-3 text-[10px] font-black uppercase border-r border-black text-left">Nature of Packing</th>
-                                 <th className="p-3 text-[10px] font-black uppercase border-r border-black text-center">No. of Pkgs</th>
-                                 <th className="p-3 text-[10px] font-black uppercase text-right">Freight</th>
-                              </tr>
-                           </thead>
-                           <tbody className="divide-y divide-gray-300">
-                              {getGdmBookings(selectedGDM).map((lr, i) => (
-                                <tr key={lr.id}>
-                                  <td className="p-3 text-[10px] font-bold border-r border-black text-center">{i + 1}</td>
-                                  <td className="p-3 text-[10px] font-black border-r border-black">
-                                    {lr.lrNo}
-                                    {lr.paymentMode && (
-                                      <p className="text-[7px] font-black uppercase text-gray-400 italic">Paid via {lr.paymentMode}</p>
-                                    )}
-                                  </td>
-                                  <td className="p-3 text-[10px] font-medium border-r border-black uppercase text-gray-700">{lr.packageName || 'General Parcel'}</td>
-                                  <td className="p-3 text-[10px] font-black border-r border-black text-center">{lr.travellersCount || 1}</td>
-                                  <td className="p-3 text-[10px] font-black text-right">₹{lr.totalPrice.toLocaleString()}</td>
-                                </tr>
-                              ))}
-                           </tbody>
-                           <tfoot>
-                              <tr className="bg-gray-50 border-t border-black font-black">
-                                 <td colSpan={3} className="p-4 text-xs uppercase border-r border-black text-right">Total Summary</td>
-                                 <td className="p-4 text-xs text-center border-r border-black">{selectedGDM.totalPackages} Pkgs</td>
-                                 <td className="p-4 text-xs text-right text-black">₹{selectedGDM.totalFreight.toLocaleString()}</td>
-                              </tr>
-                           </tfoot>
-                        </table>
-                     </div>
-
-                     <div className="grid grid-cols-2 gap-20 pt-20">
-                        <div className="border-t border-black pt-4">
-                           <p className="text-[10px] font-black uppercase text-center mb-1">Dispatch Manager Signature</p>
-                           <p className="text-[8px] text-center text-gray-400 italic">Auth ID: EMP-90218</p>
-                        </div>
-                        <div className="border-t border-black pt-4">
-                           <p className="text-[10px] font-black uppercase text-center mb-1">Driver's Acknowledgement</p>
-                           <p className="text-[8px] text-center text-gray-400 italic">Verify vehicle seal before signing</p>
-                        </div>
-                     </div>
-                  </div>
-               </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
-
       </div>
 
       <style>{`
-        @media print {
-          body * { visibility: hidden; }
-          #gdm-print-area, #gdm-print-area * { visibility: visible; }
-          #gdm-print-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 20px !important;
-            box-shadow: none !important;
-          }
-        }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #f1f1f1; border-radius: 10px; }

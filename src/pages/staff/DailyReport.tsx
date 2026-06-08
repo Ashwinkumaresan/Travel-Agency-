@@ -43,6 +43,7 @@ export default function DailyReport() {
   };
 
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const mapBackendStatusToFrontend = (status: string): Booking['status'] => {
     if (status === 'inplace') return 'in-place';
@@ -52,8 +53,9 @@ export default function DailyReport() {
   };
 
   const fetchBookings = async () => {
+    setIsLoading(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
       const token = localStorage.getItem('accessToken');
 
       // Use 'recieved' param as requested for In Place tab
@@ -91,6 +93,8 @@ export default function DailyReport() {
       }
     } catch (error) {
       console.error('Error fetching bookings:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -127,7 +131,7 @@ export default function DailyReport() {
     if (!isPaymentModalOpen) return;
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/staff/';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
       const token = localStorage.getItem('accessToken');
 
       const isToPay = isPaymentModalOpen.paymentStatus === 'to-pay';
@@ -214,17 +218,26 @@ export default function DailyReport() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full md:w-auto">
-            {[
-              { label: 'Total', value: stats.total, color: 'text-blue-600', bg: 'bg-blue-50' },
-              { label: 'In Place', value: stats.inPlace, icon: ArrowDownLeft, color: 'text-purple-600', bg: 'bg-purple-50' },
-              { label: 'Delivered', value: stats.delivered, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
-              { label: 'Paid', value: stats.paid, icon: Package, color: 'text-orange-600', bg: 'bg-orange-50' },
-            ].map((stat, i) => (
-              <div key={i} className={cn("px-4 py-2 rounded-[4px] border border-gray-50 flex flex-col items-center justify-center min-w-[80px]", stat.bg)}>
-                <span className={cn("text-lg font-bold", stat.color)}>{stat.value}</span>
-                <span className="text-[10px] uppercase font-bold text-text-muted tracking-wider">{stat.label}</span>
-              </div>
-            ))}
+            {isLoading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="px-4 py-2 rounded-[4px] border border-gray-100 bg-gray-50 flex flex-col items-center justify-center min-w-[80px] animate-pulse">
+                  <div className="h-6 bg-gray-200 rounded w-8 mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-12"></div>
+                </div>
+              ))
+            ) : (
+              [
+                { label: 'Total', value: stats.total, color: 'text-blue-600', bg: 'bg-blue-50' },
+                { label: 'In Place', value: stats.inPlace, icon: ArrowDownLeft, color: 'text-purple-600', bg: 'bg-purple-50' },
+                { label: 'Delivered', value: stats.delivered, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
+                { label: 'Paid', value: stats.paid, icon: Package, color: 'text-orange-600', bg: 'bg-orange-50' },
+              ].map((stat, i) => (
+                <div key={i} className={cn("px-4 py-2 rounded-[4px] border border-gray-50 flex flex-col items-center justify-center min-w-[80px]", stat.bg)}>
+                  <span className={cn("text-lg font-bold", stat.color)}>{stat.value}</span>
+                  <span className="text-[10px] uppercase font-bold text-text-muted tracking-wider">{stat.label}</span>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -298,7 +311,30 @@ export default function DailyReport() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {filteredBookings.length === 0 ? (
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, idx) => (
+                    <tr key={idx} className="animate-pulse">
+                      <td className="px-6 py-4">
+                        <div className="h-4 bg-gray-200 rounded w-16"></div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="space-y-2">
+                          <div className="h-4 bg-gray-200 rounded w-24"></div>
+                          <div className="h-3 bg-gray-200 rounded w-20"></div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="h-4 bg-gray-200 rounded w-16"></div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="h-4 bg-gray-200 rounded w-24"></div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="h-8 bg-gray-200 rounded w-20 mx-auto"></div>
+                      </td>
+                    </tr>
+                  ))
+                ) : filteredBookings.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-12 text-center text-text-muted italic text-xs">
                       No courier activities found for the selected filters.
