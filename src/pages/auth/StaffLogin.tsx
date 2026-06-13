@@ -53,7 +53,7 @@ export default function StaffLogin() {
               <Compass className="h-6 w-6 text-white" />
             </div>
             <span className="text-sidebar-logo font-display font-bold text-secondary tracking-tight">
-              Sa Salem Super <span className="text-primary">Service</span>
+              S A Salem Super <span className="text-primary">Service</span>
             </span>
           </Link>
         </div>

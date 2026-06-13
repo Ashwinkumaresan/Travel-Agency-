@@ -83,7 +83,7 @@ export default function Sidebar({ role, isOpen, setIsOpen, isCollapsed, setIsCol
                 animate={{ opacity: 1 }}
                 className="font-display text-[14px] font-bold text-secondary tracking-tight whitespace-nowrap"
               >
-                Sa Salem Super <span className="text-primary">Service</span>
+                S A Salem Super <span className="text-primary">Service</span>
               </motion.span>
             )}
           </Link>

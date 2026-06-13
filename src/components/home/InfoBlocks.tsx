@@ -79,7 +79,7 @@ export default function InfoBlocks() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="flex flex-col bg-white border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-[8px] p-8 shadow-sm items-center text-center"
+            className="flex flex-col justify-center items-center bg-white border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-[8px] p-8 shadow-sm items-center text-center"
           >
             <div className="h-12 w-12 rounded-[8px] bg-amber-50 text-amber-600 flex items-center justify-center mb-6 border border-amber-100">
               <Smartphone className="h-6 w-6" />
@@ -87,7 +87,7 @@ export default function InfoBlocks() {
             <h4 className="text-xl font-display font-bold text-secondary mb-2">Get Instant SMS Alert</h4>
             <p className="text-text-muted text-sm mb-6 font-medium">Stay updated with your cargo's position and delivery status in real-time.</p>
             
-            <div className="relative w-full max-w-[140px] group">
+            {/* <div className="relative w-full max-w-[140px] group">
               <div className="absolute inset-0 bg-primary/5 blur-xl rounded-[8px] transition-all duration-500 group-hover:bg-primary/10" />
               <img 
                 src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=400&q=80" 
@@ -95,7 +95,7 @@ export default function InfoBlocks() {
                 className="relative z-10 w-full h-auto rounded-[8px] shadow-md border-2 border-gray-100 transform transition-transform duration-500 group-hover:scale-105"
                 referrerPolicy="no-referrer"
               />
-            </div>
+            </div> */}
           </motion.div>
         </div>
       </div>

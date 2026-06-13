@@ -1,7 +1,7 @@
 import { motion } from 'motion/react';
-import { Truck, Package, Boxes, MoveHorizontal, ArrowUpRight } from 'lucide-react';
+import { Truck, Package, Boxes, ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
+ 
 const SERVICES = [
   {
     title: 'LOGISTIC SERVICES',
@@ -20,15 +20,6 @@ const SERVICES = [
     iconColor: 'text-primary',
     iconBg: 'bg-primary',
     watermarkColor: 'text-primary/5',
-  },
-  {
-    title: 'CONTRACT CARRIER',
-    desc: 'S A Salem Super Service is one of the popular Parcel Service Companies in Chennai, providing reliable long-term shipping.',
-    icon: MoveHorizontal,
-    bgColor: 'bg-[#e6f4ea]',
-    iconColor: 'text-emerald-600',
-    iconBg: 'bg-emerald-600',
-    watermarkColor: 'text-emerald-600/5',
   },
   {
     title: 'WAREHOUSING RENTALS',
@@ -84,12 +75,11 @@ export default function OurServices() {
           {/* Right Column: 4 Services in an Asymmetrical Mosaic Grid */}
           <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-5 gap-4">
             {SERVICES.map((service, i) => {
-              // Asymmetrical grid spans mapping: 3/5 + 2/5 on first row, 2/5 + 3/5 on second row
+              // Asymmetrical grid spans mapping: 3/5 + 2/5 on first row, 5/5 (full width) on second row
               const gridSpans = [
                 'md:col-span-3', // Service 1: Logistic Services
                 'md:col-span-2', // Service 2: Transport Services
-                'md:col-span-2', // Service 3: Contract Carrier
-                'md:col-span-3'  // Service 4: Warehousing Rentals
+                'md:col-span-5'  // Service 3: Warehousing Rentals
               ];
 
               return (

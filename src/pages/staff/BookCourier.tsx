@@ -78,19 +78,19 @@ export default function BookCourier() {
   ]);
 
   const [paymentInfo, setPaymentInfo] = useState({
-    weight: 1,
+    weight: '' as number | '',
     status: 'Paid' as 'Paid' | 'To Pay',
     paymentMode: 'Cash' as 'Cash' | 'Online',
     invoiceNumber: ''
   });
 
-  const [fees, setFees] = useState({
-    freight: 0,
-    loadingUnloading: 0,
-    doorPickup: 0,
-    ddCharges: 0,
-    otherTransport: 0,
-    mamool: 0,
+  const [fees, setFees] = useState<Record<string, number | ''>>({
+    freight: '',
+    loadingUnloading: '',
+    doorPickup: '',
+    ddCharges: '',
+    otherTransport: '',
+    mamool: '',
     statCharges: 10
   });
 
@@ -127,12 +127,89 @@ export default function BookCourier() {
   };
 
   const handleFeeChange = (field: keyof typeof fees, value: string) => {
-    const rawNum = value === '' ? 0 : parseFloat(value);
-    const num = Math.max(0, rawNum);
-    setFees({ ...fees, [field]: num });
+    const rawNum = value === '' ? '' : parseFloat(value);
+    setFees({ ...fees, [field]: rawNum });
   };
 
   const handleConfirm = async () => {
+    // Validation Checks
+    if (!routeInfo.toBranchId) {
+      toast.error('Please select a destination branch.');
+      return;
+    }
+    
+    // Names Validation: No numbers, no empty values
+    if (!routeInfo.fromName.trim()) {
+      toast.error('Sender name is required.');
+      return;
+    }
+    if (/\d/.test(routeInfo.fromName)) {
+      toast.error('Sender name cannot contain numbers.');
+      return;
+    }
+    if (!routeInfo.toName.trim()) {
+      toast.error('Receiver name is required.');
+      return;
+    }
+    if (/\d/.test(routeInfo.toName)) {
+      toast.error('Receiver name cannot contain numbers.');
+      return;
+    }
+
+    // Phone Numbers Validation: Only numbers, exactly 10 digits
+    if (!/^\d{10}$/.test(routeInfo.fromPhone)) {
+      toast.error('Sender phone number must be exactly 10 digits.');
+      return;
+    }
+    if (!/^\d{10}$/.test(routeInfo.toPhone)) {
+      toast.error('Receiver phone number must be exactly 10 digits.');
+      return;
+    }
+
+    // Packages count validation
+    for (let i = 0; i < packages.length; i++) {
+      const pkg = packages[i];
+      if (!pkg.nature.trim()) {
+        toast.error(`Please enter nature of packing for item ${i + 1}.`);
+        return;
+      }
+      const pCount = Number(pkg.count);
+      if (isNaN(pCount) || pCount <= 0) {
+        toast.error(`Number of packages for item ${i + 1} must be greater than 0.`);
+        return;
+      }
+    }
+
+    // Weight validation: placeholder, no 0, no negative
+    const weightVal = Number(paymentInfo.weight);
+    if (isNaN(weightVal) || weightVal <= 0) {
+      toast.error('Weight must be greater than 0 KG.');
+      return;
+    }
+
+    // Invoice Number validation: no negative and no 0
+    if (paymentInfo.invoiceNumber) {
+      if (Number(paymentInfo.invoiceNumber) <= 0 || /^-/.test(paymentInfo.invoiceNumber) || paymentInfo.invoiceNumber === '0') {
+        toast.error('Invoice number must be positive and cannot be 0.');
+        return;
+      }
+    }
+
+    // Statistical Charges validation: min of 10, no negative
+    const statChargesVal = Number(fees.statCharges);
+    if (isNaN(statChargesVal) || statChargesVal < 10) {
+      toast.error('Statistical charges must be at least 10.');
+      return;
+    }
+
+    // Fees: no negative
+    for (const [key, val] of Object.entries(fees)) {
+      if (Number(val) < 0) {
+        toast.error(`Fee for ${key} cannot be negative.`);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'https://api.backend.sasalemsuperservice.com/api/staff/';
@@ -151,14 +228,14 @@ export default function BookCourier() {
         sender_phone_num: routeInfo.fromPhone,
         receiver_phone_num: routeInfo.toPhone,
         parcel_information: parcelInformation,
-        weight: paymentInfo.weight,
-        freight: fees.freight,
-        loading_unloading: fees.loadingUnloading,
-        door_pickup: fees.doorPickup,
-        other_transport_crossing: fees.otherTransport,
-        mamool: fees.mamool,
-        statistical_charges: fees.statCharges,
-        door_delivery: fees.ddCharges,
+        weight: Number(paymentInfo.weight) || 0,
+        freight: Number(fees.freight) || 0,
+        loading_unloading: Number(fees.loadingUnloading) || 0,
+        door_pickup: Number(fees.doorPickup) || 0,
+        other_transport_crossing: Number(fees.otherTransport) || 0,
+        mamool: Number(fees.mamool) || 0,
+        statistical_charges: Number(fees.statCharges) || 0,
+        door_delivery: Number(fees.ddCharges) || 0,
         delivery_type: routeInfo.deliveryType === 'Godown' ? 'GoodDown Delivery' : 'Door Delivery',
         payment_status: paymentInfo.status,
         payment_mode: paymentInfo.paymentMode,
@@ -226,7 +303,7 @@ export default function BookCourier() {
         });
         setPackages([{ id: Date.now(), nature: '', count: 1 }]);
         setPaymentInfo({
-          weight: 1,
+          weight: '' as number | '',
           status: 'Paid',
           paymentMode: 'Cash',
           invoiceNumber: ''
@@ -379,10 +456,15 @@ export default function BookCourier() {
                         className="w-full pl-9 pr-3 py-2 text-xs border border-gray-100 rounded-[4px] focus:ring-1 focus:ring-primary outline-none"
                         placeholder="Enter sender name"
                         value={routeInfo.fromName}
-                        onChange={e => setRouteInfo({ ...routeInfo, fromName: e.target.value })}
+                        onChange={e => {
+                          const val = e.target.value;
+                          if (/^[^0-9]*$/.test(val)) {
+                            setRouteInfo({ ...routeInfo, fromName: val });
+                          }
+                        }}
                       />
                     </div>
-
+ 
                     <label className="text-[10px] font-bold text-text-muted uppercase mb-1.5 block">From Address (Sender)</label>
                     <textarea
                       className="w-full h-20 p-3 text-xs border border-gray-100 rounded-[4px] focus:ring-1 focus:ring-primary outline-none transition-all resize-none mb-3"
@@ -398,7 +480,12 @@ export default function BookCourier() {
                         className="w-full pl-9 pr-3 py-2 text-xs border border-gray-100 rounded-[4px] focus:ring-1 focus:ring-primary outline-none"
                         placeholder="Sender's 10-digit number"
                         value={routeInfo.fromPhone}
-                        onChange={e => setRouteInfo({ ...routeInfo, fromPhone: e.target.value })}
+                        onChange={e => {
+                          const val = e.target.value;
+                          if (/^\d{0,10}$/.test(val)) {
+                            setRouteInfo({ ...routeInfo, fromPhone: val });
+                          }
+                        }}
                       />
                     </div>
                   </div>
@@ -413,10 +500,15 @@ export default function BookCourier() {
                         className="w-full pl-9 pr-3 py-2 text-xs border border-gray-100 rounded-[4px] focus:ring-1 focus:ring-primary outline-none"
                         placeholder="Enter receiver name"
                         value={routeInfo.toName}
-                        onChange={e => setRouteInfo({ ...routeInfo, toName: e.target.value })}
+                        onChange={e => {
+                          const val = e.target.value;
+                          if (/^[^0-9]*$/.test(val)) {
+                            setRouteInfo({ ...routeInfo, toName: val });
+                          }
+                        }}
                       />
                     </div>
-
+ 
                     <label className="text-[10px] font-bold text-text-muted uppercase mb-1.5 block">To Address (Receiver)</label>
                     <textarea
                       className="w-full h-20 p-3 text-xs border border-gray-100 rounded-[4px] focus:ring-1 focus:ring-primary outline-none transition-all resize-none mb-3"
@@ -432,7 +524,12 @@ export default function BookCourier() {
                         className="w-full pl-9 pr-3 py-2 text-xs border border-gray-100 rounded-[4px] focus:ring-1 focus:ring-primary outline-none"
                         placeholder="Receiver's 10-digit number"
                         value={routeInfo.toPhone}
-                        onChange={e => setRouteInfo({ ...routeInfo, toPhone: e.target.value })}
+                        onChange={e => {
+                          const val = e.target.value;
+                          if (/^\d{0,10}$/.test(val)) {
+                            setRouteInfo({ ...routeInfo, toPhone: val });
+                          }
+                        }}
                       />
                     </div>
                   </div>
@@ -482,9 +579,16 @@ export default function BookCourier() {
                         <input
                           type="number"
                           className="w-full p-2 text-xs border-b border-gray-200 outline-none focus:border-primary transition-colors bg-transparent"
-                          min="1"
                           value={pkg.count}
-                          onChange={e => updatePackage(pkg.id, 'count', e.target.value)}
+                          onChange={e => {
+                            const val = parseInt(e.target.value);
+                            updatePackage(pkg.id, 'count', isNaN(val) ? '' : val);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === '-' || e.key === 'e') {
+                              e.preventDefault();
+                            }
+                          }}
                         />
                       </div>
                       <div className="col-span-6 md:col-span-1 flex justify-end order-3 md:order-none">
@@ -512,9 +616,18 @@ export default function BookCourier() {
                   <label className="text-[10px] font-bold text-text-muted uppercase mb-1 block">Weight (KG)</label>
                   <input
                     type="number"
+                    placeholder="Enter weight (KG)"
                     className="w-full text-lg font-bold text-secondary outline-none border-b border-transparent focus:border-primary/30 transition-all"
                     value={paymentInfo.weight}
-                    onChange={e => setPaymentInfo({ ...paymentInfo, weight: Number(e.target.value) })}
+                    onChange={e => {
+                      const val = parseFloat(e.target.value);
+                      setPaymentInfo({ ...paymentInfo, weight: isNaN(val) ? '' : val });
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === '-' || e.key === 'e') {
+                        e.preventDefault();
+                      }
+                    }}
                   />
                 </div>
               </div>
@@ -578,7 +691,11 @@ export default function BookCourier() {
                     placeholder="INV-XXXX"
                     className="w-full text-sm font-bold text-secondary outline-none border-b border-transparent focus:border-primary/30 transition-all"
                     value={paymentInfo.invoiceNumber}
-                    onChange={e => setPaymentInfo({ ...paymentInfo, invoiceNumber: e.target.value })}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (/^-/.test(val) || val === '0') return;
+                      setPaymentInfo({ ...paymentInfo, invoiceNumber: val.replace(/-/g, '') });
+                    }}
                   />
                 </div>
               </div>
@@ -606,10 +723,9 @@ export default function BookCourier() {
                       <span className="absolute left-0 bottom-2 text-xs font-bold text-gray-300">₹</span>
                       <input
                         type="number"
-                        min="0"
                         placeholder="0"
                         className="w-full pl-4 py-1 text-sm font-bold text-secondary border-b border-gray-100 focus:border-primary outline-none transition-all bg-transparent"
-                        value={fees[fee.key as keyof typeof fees] || ''}
+                        value={fees[fee.key as keyof typeof fees] ?? ''}
                         onChange={e => handleFeeChange(fee.key as any, e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === '-' || e.key === 'e') {
