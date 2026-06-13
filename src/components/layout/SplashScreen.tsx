@@ -29,12 +29,12 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ isTransitioning }) => {
       transition={{ duration: 0.8, delay: 0.2, ease: "easeInOut" }}
       className="fixed inset-0 z-[100] bg-white flex items-center justify-center overflow-hidden pointer-events-none"
     >
-      <div className="relative flex items-center justify-center w-full h-full">
+      <div className="relative flex items-center justify-center w-full h-full p-4">
         <AnimatePresence>
           {!isTransitioning && showLogo && (
             <motion.div 
               layoutId="brand-identity"
-              className="flex items-center gap-4 md:gap-5"
+              className="flex items-center gap-2 sm:gap-4 md:gap-5 max-w-full justify-center"
               transition={{ 
                 layout: { 
                   type: "spring", 
@@ -48,13 +48,13 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ isTransitioning }) => {
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
-                className="bg-primary p-3.5 md:p-4 rounded-xl md:rounded-2xl shadow-xl shadow-primary/20"
+                className="bg-primary p-2.5 sm:p-3.5 md:p-4 rounded-lg sm:rounded-xl md:rounded-2xl shadow-xl shadow-primary/20 shrink-0"
               >
-                <Compass className="h-10 w-10 md:h-12 md:w-12 text-white" />
+                <Compass className="h-7 w-7 sm:h-10 sm:w-10 md:h-12 md:w-12 text-white" />
               </motion.div>
-
+ 
               {/* Typing Brand Name */}
-              <div className="flex">
+              <div className="flex items-center">
                 {companyName.split("").map((char, index) => (
                   <motion.span
                     key={index}
@@ -64,8 +64,9 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ isTransitioning }) => {
                       duration: 0.1, 
                       delay: 0.6 + (index * 0.05) 
                     }}
-                    className={`text-3xl md:text-5xl font-display font-bold whitespace-pre ${
-                      char === " " ? "mr-2 md:mr-3" : ""
+                    style={{ fontSize: 'clamp(1.1rem, 5.5vw, 3rem)' }}
+                    className={`font-display font-bold whitespace-pre ${
+                      char === " " ? "mr-[0.2em]" : ""
                     } ${
                       index >= 7 ? "text-primary italic" : "text-secondary"
                     }`}

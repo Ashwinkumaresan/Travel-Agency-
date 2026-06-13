@@ -104,7 +104,6 @@ export default function DailyReport() {
 
   const saveBookings = (newBookings: Booking[]) => {
     setBookings(newBookings);
-    localStorage.setItem('voyage_bookings', JSON.stringify(newBookings));
   };
 
   const handleVehicleUpdate = (bookingId: string, vehicleNo: string) => {
@@ -209,10 +208,10 @@ export default function DailyReport() {
               />
               <div className="flex items-center gap-2 text-xs text-text-muted mt-0.5">
                 <User className="h-3 w-3" />
-                <span>{staffInfo.name}</span>
+                <span>{localStorage.getItem('staffID')}</span>
                 <span className="mx-1">•</span>
                 <MapPin className="h-3 w-3" />
-                <span>{staffInfo.location} Office</span>
+                <span>{localStorage.getItem('branchName')} Office</span>
               </div>
             </div>
           </div>

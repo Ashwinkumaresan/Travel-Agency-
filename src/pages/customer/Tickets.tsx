@@ -4,6 +4,7 @@ import { cn, formatDate } from '@/lib/utils';
 import { Plus, MessageCircle, Clock, CheckCircle2, AlertCircle, X, Send, ChevronRight, Info, History, HelpCircle } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
 import { Ticket, TicketCategory } from '@/types';
 
 export default function Tickets() {
@@ -24,7 +25,7 @@ export default function Tickets() {
   });
 
   const handleCreateTicket = () => {
-    alert('Ticket created successfully!');
+    toast.success('Ticket created successfully!');
     setIsCreateModalOpen(false);
     resetCreateForm();
   };

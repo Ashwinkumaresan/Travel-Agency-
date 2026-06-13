@@ -446,7 +446,7 @@ export default function RouteMappingPage() {
             <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Base Hub:</span>
             <div className="bg-primary/5 text-primary px-4 py-1.5 rounded-[4px] flex items-center gap-2 border border-primary/10">
               <Building2 className="h-4 w-4" />
-              <span className="text-sm font-black">Selected</span>
+              <span className="text-sm font-black">{localStorage.getItem('branchName')}</span>
             </div>
           </div>
           <div className="flex items-center gap-2 px-3 py-1 bg-secondary/5 rounded-[4px] text-[10px] font-bold text-secondary">
@@ -472,7 +472,7 @@ export default function RouteMappingPage() {
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Starting From</label>
                   <div className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 rounded-[8px]">
                     <Building2 className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm font-bold text-secondary">Selected</span>
+                    <span className="text-sm font-bold text-secondary">{localStorage.getItem('branchName')}</span>
                   </div>
                 </div>
 

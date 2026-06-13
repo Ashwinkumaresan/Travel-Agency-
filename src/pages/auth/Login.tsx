@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Compass, Mail, Lock, User, Phone, Shield, ArrowRight, Chrome } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 type LoginRole = 'customer' | 'staff' | 'admin';
 
@@ -34,11 +35,11 @@ export default function Login() {
           localStorage.setItem('username', data.username);
           navigate('/staff/book');
         } else {
-          alert(data.error || 'Login failed');
+          toast.error(data.error || 'Login failed');
         }
       } catch (error) {
         console.error('Login error:', error);
-        alert('An error occurred during login');
+        toast.error('An error occurred during login');
       }
     } else if (role === 'customer') {
       navigate('/app/dashboard');

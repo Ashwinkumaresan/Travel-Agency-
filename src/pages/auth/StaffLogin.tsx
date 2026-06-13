@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Compass, Lock, ArrowRight, Shield } from 'lucide-react';
 import { motion } from 'motion/react';
+import { toast } from 'sonner';
 
 export default function StaffLogin() {
   const [userId, setUserId] = useState('');
@@ -28,14 +29,15 @@ export default function StaffLogin() {
         localStorage.setItem('accessToken', data.access);
         localStorage.setItem('refreshToken', data.refresh);
         localStorage.setItem('staffID', data.staffID);
+        localStorage.setItem('branchName', data.branch);
         localStorage.setItem('username', data.username);
         navigate('/staff/book');
       } else {
-        alert(data.error || 'Login failed');
+        toast.error(data.error || 'Login failed');
       }
     } catch (error) {
       console.error('Login error:', error);
-      alert('An error occurred during login');
+      toast.error('An error occurred during login');
     } finally {
       setIsLoading(false);
     }
@@ -113,7 +115,7 @@ export default function StaffLogin() {
               )}
             </button>
 
-            <p className="text-center text-xs text-text-muted mt-6">
+            {/* <p className="text-center text-xs text-text-muted mt-6">
               Not staff?{' '}
               <Link 
                 to="/login"
@@ -121,7 +123,7 @@ export default function StaffLogin() {
               >
                 Go to Customer Portal
               </Link>
-            </p>
+            </p> */}
           </form>
         </div>
       </div>

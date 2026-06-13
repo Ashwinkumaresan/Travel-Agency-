@@ -2,6 +2,7 @@ import PortalLayout from '@/components/layout/PortalLayout';
 import { cn, formatCurrency } from '@/lib/utils';
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
 import {
   MapPin,
   Package,
@@ -209,7 +210,7 @@ export default function BookCourier() {
           }
         };
 
-        alert('Booking Confirmed and Print request sent successfully!');
+        toast.success('Booking Confirmed and Print request sent successfully!');
 
         // Reset all fields
         setRouteInfo({
@@ -241,11 +242,11 @@ export default function BookCourier() {
         });
       } else {
         const errorData = await response.json();
-        alert(`Error: ${JSON.stringify(errorData)}`);
+        toast.error(`Error: ${JSON.stringify(errorData)}`);
       }
     } catch (error) {
       console.error('Error creating courier:', error);
-      alert('An error occurred during booking');
+      toast.error('An error occurred during booking');
     } finally {
       setIsSubmitting(false);
     }
@@ -273,7 +274,7 @@ export default function BookCourier() {
                     <label className="text-[10px] font-bold text-text-muted uppercase mb-1.5 block">From Branch</label>
                     <div className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 rounded-[4px]">
                       <Building2 className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm font-bold text-secondary">{staffBranch || 'Selected'}</span>
+                      <span className="text-sm font-bold text-secondary">{localStorage.getItem('branchName') || 'Selected'}</span>
                     </div>
                   </div>
 

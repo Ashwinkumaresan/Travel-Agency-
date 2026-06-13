@@ -165,7 +165,7 @@ export default function Sidebar({ role, isOpen, setIsOpen, isCollapsed, setIsCol
           </div> */}
 
           <Link
-            to="/login"
+            to="/staff/login"
             className={cn(
               "flex items-center gap-3 px-4 py-3 rounded-md text-red-500 hover:bg-red-50 transition-all group",
               isCollapsed ? "justify-center" : ""

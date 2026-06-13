@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import Home from './pages/public/Home';
@@ -34,16 +34,34 @@ import DriverManager from './pages/admin/DriverManager';
 import VehicleManager from './pages/admin/VehicleManager';
 import DetailedMetrics from './pages/shared/DetailedMetrics';
 import SplashScreen from './components/layout/SplashScreen';
+import { Toaster } from 'sonner';
 
 const isServer = typeof window === 'undefined';
 
+function StaffLayoutGuard() {
+  if (isServer) {
+    return <Outlet />;
+  }
+  const token = localStorage.getItem('accessToken');
+  const staffID = localStorage.getItem('staffID');
+
+  if (!token || !staffID) {
+    return <Navigate to="/staff/login" replace />;
+  }
+  return <Outlet />;
+}
+
 export default function App() {
-  // On the server, skip the splash screen entirely
-  const [isSplashActive, setIsSplashActive] = useState(!isServer);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const location = useLocation();
+  const isHomePage = location.pathname === '/';
+
+  // On the server, skip the splash screen entirely.
+  // On the client, only show it if we are on the home page.
+  const [isSplashActive, setIsSplashActive] = useState(!isServer && isHomePage);
+  const [isTransitioning, setIsTransitioning] = useState(isServer || !isHomePage);
 
   useEffect(() => {
-    if (isServer) return;
+    if (isServer || !isHomePage) return;
 
     // 1. Hold at center for 2.0s, then start movement to navbar
     const movementTimer = setTimeout(() => {
@@ -59,10 +77,11 @@ export default function App() {
       clearTimeout(movementTimer);
       clearTimeout(removalTimer);
     };
-  }, []);
+  }, [isHomePage]);
 
   return (
     <div className="relative bg-white min-h-screen overflow-x-hidden">
+      {!isServer && <Toaster position="bottom-right" richColors />}
       {/* Force scroll to top and prevent overflow during splash */}
       {!isServer && isSplashActive && (
         <div className="fixed inset-0 z-[110] bg-white pointer-events-none" />
@@ -96,16 +115,18 @@ export default function App() {
             <Route path="/app/tickets" element={<Tickets />} />
             <Route path="/app/profile" element={<Profile />} />
             
-            <Route path="/staff/dashboard" element={<StaffDashboard />} />
-            <Route path="/staff/metrics" element={<DetailedMetrics />} />
-            <Route path="/staff/book" element={<BookCourier />} />
-            <Route path="/staff/report" element={<DailyReport />} />
-            <Route path="/staff/bookings" element={<ManageBookings />} />
-            <Route path="/staff/tickets" element={<ManageTickets />} />
-            <Route path="/staff/customers" element={<ManageCustomers />} />
-            <Route path="/staff/accounts" element={<Accounts />} />
-            <Route path="/staff/mapping" element={<RouteMapping />} />
-            <Route path="/staff/gdm" element={<GDMManagement />} />
+            <Route element={<StaffLayoutGuard />}>
+              <Route path="/staff/dashboard" element={<StaffDashboard />} />
+              <Route path="/staff/metrics" element={<DetailedMetrics />} />
+              <Route path="/staff/book" element={<BookCourier />} />
+              <Route path="/staff/report" element={<DailyReport />} />
+              <Route path="/staff/bookings" element={<ManageBookings />} />
+              <Route path="/staff/tickets" element={<ManageTickets />} />
+              <Route path="/staff/customers" element={<ManageCustomers />} />
+              <Route path="/staff/accounts" element={<Accounts />} />
+              <Route path="/staff/mapping" element={<RouteMapping />} />
+              <Route path="/staff/gdm" element={<GDMManagement />} />
+            </Route>
             
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/metrics" element={<DetailedMetrics />} />
@@ -144,16 +165,18 @@ export default function App() {
               <Route path="/app/tickets" element={<Tickets />} />
               <Route path="/app/profile" element={<Profile />} />
               
-              <Route path="/staff/dashboard" element={<StaffDashboard />} />
-              <Route path="/staff/metrics" element={<DetailedMetrics />} />
-              <Route path="/staff/book" element={<BookCourier />} />
-              <Route path="/staff/report" element={<DailyReport />} />
-              <Route path="/staff/bookings" element={<ManageBookings />} />
-              <Route path="/staff/tickets" element={<ManageTickets />} />
-              <Route path="/staff/customers" element={<ManageCustomers />} />
-              <Route path="/staff/accounts" element={<Accounts />} />
-              <Route path="/staff/mapping" element={<RouteMapping />} />
-              <Route path="/staff/gdm" element={<GDMManagement />} />
+              <Route element={<StaffLayoutGuard />}>
+                <Route path="/staff/dashboard" element={<StaffDashboard />} />
+                <Route path="/staff/metrics" element={<DetailedMetrics />} />
+                <Route path="/staff/book" element={<BookCourier />} />
+                <Route path="/staff/report" element={<DailyReport />} />
+                <Route path="/staff/bookings" element={<ManageBookings />} />
+                <Route path="/staff/tickets" element={<ManageTickets />} />
+                <Route path="/staff/customers" element={<ManageCustomers />} />
+                <Route path="/staff/accounts" element={<Accounts />} />
+                <Route path="/staff/mapping" element={<RouteMapping />} />
+                <Route path="/staff/gdm" element={<GDMManagement />} />
+              </Route>
               
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/metrics" element={<DetailedMetrics />} />

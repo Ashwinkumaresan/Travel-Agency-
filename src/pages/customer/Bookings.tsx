@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Search, Filter } from 'lucide-react';
 import { useState } from 'react';
 import { AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
 import { Booking } from '@/types';
 
 // New Modular Components
@@ -36,7 +37,9 @@ export default function Bookings() {
     // Simulate API call
     return new Promise<void>((resolve) => {
       setTimeout(() => {
-        alert(`Ticket raised successfully for Booking ${bookingId}!\nSubject: ${subject}`);
+        toast.success(`Ticket raised successfully for Booking ${bookingId}!`, {
+          description: `Subject: ${subject}`
+        });
         resolve();
       }, 1000);
     });

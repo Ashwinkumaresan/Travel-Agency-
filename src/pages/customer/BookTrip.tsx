@@ -5,6 +5,7 @@ import { Check, ChevronRight, CreditCard, MapPin, Calendar, ShieldCheck, Phone, 
 import { useState } from 'react';
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
 
 const STEPS = ['Select Transport', 'Booking Details', 'Payment Deadlines', 'Review'];
 
@@ -365,7 +366,7 @@ export default function BookTrip() {
             <ChevronLeft className="h-4 w-4" /> Back
           </button>
           <button 
-            onClick={() => step === 4 ? alert('Booking Confirmed!') : setStep(Math.min(4, step + 1))}
+            onClick={() => step === 4 ? toast.success('Booking Confirmed!') : setStep(Math.min(4, step + 1))}
             className="h-[44px] px-8 rounded-md bg-primary text-white font-bold hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all flex items-center gap-2"
           >
             {step === 4 ? 'Confirm Booking' : 'Continue'} <ChevronRight className="h-4 w-4" />
